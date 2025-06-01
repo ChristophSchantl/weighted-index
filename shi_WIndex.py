@@ -118,7 +118,11 @@ def plot_performance(cumulative_dict):
     for name, cum in cumulative_dict.items():
         if cum is None or len(cum) == 0:
             continue
-        ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.5)
+        if name in ["Composite Index", "Eigener Index"]:
+            # Composite Index (oder dein Name) FETT zeichnen
+            ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=2.8, color="black")
+        else:
+            ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.8)
     ax.set_title("Kumulative Performance (Start = 1.0)", fontsize=8, pad=8)
     ax.set_xlabel("Datum", fontsize=5)
     ax.set_ylabel("Indexierte Entwicklung", fontsize=5)
