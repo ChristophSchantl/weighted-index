@@ -393,7 +393,7 @@ def main():
 
         # Tab 5: Composite Index
     with tabs[4]:
-        st.subheader("🔀 Eigener Index aus gewählten Assets")
+        st.subheader("🔀 Composite Index aus gewählten Assets")
         
         asset_names = list(returns_dict.keys())
         if len(asset_names) < 2:
@@ -439,11 +439,11 @@ def main():
                 compare_ret["Eigener Index"] = custom_index_returns
                 
                 # Grafiken
-                st.markdown("**Kumulative Performance (Eigener Index vs. Einzelassets):**")
+                st.markdown("**Kumulative Performance (Composite Index vs. Einzelassets):**")
                 plot_performance(compare_cum)
                 
                 # Metriken
-                st.markdown("**Risikokennzahlen (Eigener Index vs. Einzelassets):**")
+                st.markdown("**Risikokennzahlen (Composite Index vs. Einzelassets):**")
                 metrics = calculate_metrics(compare_ret, compare_cum)
                 percent_cols = [
                     'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
