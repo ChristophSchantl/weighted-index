@@ -402,23 +402,21 @@ def main():
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
     
             # Initialwerte
-            default = [round(1/len(asset_names)*100, 2) for _ in asset_names]
+            default = [int(round(1/len(asset_names)*100)) for _ in asset_names]
             weights = {}
-    
-            # Schönes Tabellenlayout für die Slider
             for i, asset in enumerate(asset_names):
                 with st.container():
                     cols = st.columns([2, 6, 2])
                     cols[0].markdown(f"<b>{asset}</b>", unsafe_allow_html=True)
                     weights[asset] = cols[1].slider(
                         label="",
-                        min_value=0.0,
-                        max_value=100.0,
+                        min_value=0,
+                        max_value=100,
                         value=default[i],
-                        step=0.1,
+                        step=1,   # Nur ganze Zahlen
                         key=f"weight_{asset}_slider"
                     )
-                    cols[2].markdown(f"<span style='color: #999;'>{weights[asset]:.1f} %</span>", unsafe_allow_html=True)
+                    cols[2].markdown(f"<span style='color: #999;'>{weights[asset]} %</span>", unsafe_allow_html=True)
     
             total_weight = sum(weights.values())
     
