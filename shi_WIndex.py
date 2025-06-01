@@ -1,4 +1,3 @@
-
 from st_aggrid import AgGrid, GridOptionsBuilder
 import streamlit as st
 import pandas as pd
@@ -299,7 +298,13 @@ def main():
             cumulative_dict[name] = cumulative_dict[name].loc[common_index]
 
     # --- Tabs ---
-    tabs = st.tabs(["🚦 Metriken", "📈 Performance & Drawdown", "📉 Sharpe & Korrelation", "📊 Monatsrenditen"])
+    tabs = st.tabs([
+    "🚦 Metriken",
+    "📈 Performance & Drawdown",
+    "📉 Sharpe & Korrelation",
+    "📊 Monatsrenditen",
+    "🔀 Composite Index"
+])
 
     
     # --- Metrik-Tab ---
@@ -386,8 +391,8 @@ def main():
             st.warning("Keine Daten vorhanden.")
 
 
-    # --- Eigener Index Tab ---
-    with st.tabs(["🚦 Metriken", "📈 Performance & Drawdown", "📉 Sharpe & Korrelation", "📊 Monatsrenditen", "🔀 Eigener Index"])[4]:
+        # Tab 5: Composite Index
+    with tabs[4]:
         st.subheader("🔀 Eigener Index aus gewählten Assets")
         
         asset_names = list(returns_dict.keys())
