@@ -1,1 +1,8 @@
 streamlit-aggrid
+matplotlib
+streamlit
+yfinance
+pandas
+numpy
+matplotlib
+seaborn
