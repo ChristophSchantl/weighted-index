@@ -486,13 +486,10 @@ def main():
 
 
 
-
-
-
             
             if opt_result.success:
                 opt_weights = opt_result.x
-                opt_weights_percent = (opt_weights * 100).round(1)
+                opt_weights_percent = (opt_weights * 100).round().astype(int)
                 st.markdown("""
                     <div style='margin-bottom:10px;font-size:1.1em;'>
                     <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
@@ -516,7 +513,7 @@ def main():
                                 box-shadow: 0 1px 4px #dbe9f4bb;
                             '>
                                 <span style='font-size:1.11em;font-weight:600;'>{asset}</span><br>
-                                <span style='font-size:1.3em;color:#146eb4;font-weight:700;'>{w:.1f}%</span>
+                                <span style='font-size:1.3em;color:#146eb4;font-weight:700;'>{w}%</span>
                             </div>
                             """,
                             unsafe_allow_html=True
