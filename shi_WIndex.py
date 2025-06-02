@@ -119,9 +119,10 @@ def plot_performance(cumulative_dict):
         if cum is None or len(cum) == 0:
             continue
         if name in ["Composite Index", "Eigener Index"]:
+            # Composite Index (oder dein Name) FETT zeichnen
             ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.5, color="black")
         else:
-            ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.8)
+            ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.5)
     ax.set_title("Kumulative Performance (Start = 1.0)", fontsize=8, pad=8)
     ax.set_xlabel("Datum", fontsize=5)
     ax.set_ylabel("Indexierte Entwicklung", fontsize=5)
@@ -132,7 +133,6 @@ def plot_performance(cumulative_dict):
     plt.subplots_adjust(right=0.85)
     st.pyplot(fig)
 
-    # --- Drawdown Plot ---
     fig2, ax2 = plt.subplots(figsize=(6, 3))
     for name, cum in cumulative_dict.items():
         if cum is None or len(cum) == 0:
@@ -150,13 +150,8 @@ def plot_performance(cumulative_dict):
             y = y.flatten()
         if len(x) != len(y):
             continue
-        # HIER: Composite Index in SCHWARZ und dicker
-        if name in ["Composite Index", "Eigener Index"]:
-            ax2.fill_between(x, y, 0, alpha=0.18, color="black")
-            ax2.plot(x, y, linewidth=2.2, color="black", label=name)
-        else:
-            ax2.fill_between(x, y, 0, alpha=0.3)
-            ax2.plot(x, y, linewidth=0.5, label=name)
+        ax2.fill_between(x, y, 0, alpha=0.3)
+        ax2.plot(x, y, linewidth=0.5, label=name)
     ax2.set_title("Drawdown-Verlauf", fontsize=8, pad=8)
     ax2.set_ylabel("Drawdown", fontsize=8)
     ax2.legend(loc='center left', bbox_to_anchor=(1.0, 0.5), frameon=False, fontsize=5)
@@ -168,7 +163,6 @@ def plot_performance(cumulative_dict):
     plt.tight_layout()
     plt.subplots_adjust(right=0.85)
     st.pyplot(fig2)
-
 
 def analyze_correlations(returns_dict):
     returns_clean = {}
@@ -502,3 +496,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
