@@ -444,7 +444,7 @@ def main():
             btn = st.button("Setze optimale Sharpe-Ratio-Gewichte", key="set_opt_btn")
             if btn:
                 st.session_state["set_opt_weights"] = True
-                st.experimental_rerun()  # Sofort rerendern, damit Werte übernommen werden
+                st.rerun()  # Sofort rerendern, damit Werte übernommen werden
     
             # --- 3. Slider-Logik: Initialisierung & Rendering ---
             sliders = []
