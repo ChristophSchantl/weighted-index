@@ -418,6 +418,9 @@ def main():
     
         if num_assets < 2:
             st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
+        
+        
+        
         else:
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
             default = [int(round(100/num_assets)) for _ in range(num_assets - 1)]
@@ -482,11 +485,17 @@ def main():
             if opt_result.success:
                 opt_weights = opt_result.x
                 opt_weights_percent = (opt_weights * 100).round(1)
+
+
+                
                 st.info(
-                    f"**Optimale Gewichtung für maximales Sharpe Ratio:**<br>"
-                    + "<br>".join([f"{asset}: <b>{w:.1f}%</b>" for asset, w in zip(asset_names, opt_weights_percent)]),
-                    icon="🔎"
+                    "🔎 Optimale Gewichtung für maximales Sharpe Ratio:\n"
+                    + "\n".join([f"{asset}: {w:.1f}%" for asset, w in zip(asset_names, opt_weights_percent)])
                 )
+            
+
+
+            
             else:
                 st.warning("Sharpe-Ratio-Optimierung fehlgeschlagen.")
     
