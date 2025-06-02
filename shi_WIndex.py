@@ -406,22 +406,47 @@ def main():
             st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
         else:
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
-            default = [int(round(100/num_assets)) for _ in asset_names]
     
-            # Alle Slider frei zwischen 0 und 100%
-            weights = []
-            cols = st.columns(num_assets)
-            for i in range(num_assets):
-                w = cols[i].slider(
-                    f"{asset_names[i]}",
-                    min_value=0,
-                    max_value=100,
-                    value=default[i],
-                    step=1,
-                    key=f"weight_{asset_names[i]}_slider"
+            # Standardwerte für die ersten N-1 Assets
+            default = [int(round(100/num_assets)) for _ in range(num_assets - 1)]
+            slider_keys = [f"weight_{asset_names[i]}_slider" for i in range(num_assets - 1)]
+    
+            # Dynamische Limits für die Slider
+            sliders = []
+            max_values = [100] * (num_assets - 1)
+            for i in range(num_assets - 1):
+                # Das Maximum dieses Sliders ist: 100 - Summe der bisherigen Slider - (Anzahl verbleibender Slider - 1) * 0
+                if i == 0:
+                    max_value = 100
+                else:
+                    max_value = 100 - sum(sliders[:i])
+                value = default[i] if default[i] <= max_value else max_value
+                sliders.append(
+                    st.slider(
+                        f"{asset_names[i]}",
+                        min_value=0,
+                        max_value=max_value,
+                        value=value,
+                        step=1,
+                        key=slider_keys[i]
+                    )
                 )
-                weights.append(w)
     
+            sum_sliders = sum(sliders)
+            last_weight = max(0, 100 - sum_sliders)
+    
+            st.number_input(
+                f"{asset_names[-1]} (auto)",
+                min_value=0,
+                max_value=100,
+                value=last_weight,
+                step=1,
+                key=f"weight_{asset_names[-1]}_auto",
+                disabled=True
+            )
+    
+            # Für die spätere Berechnung:
+            weights = sliders + [last_weight]
             total_weight = sum(weights)
     
             st.markdown(
@@ -429,14 +454,12 @@ def main():
                 f"<span style='color:{'#3cb371' if total_weight == 100 else '#e74c3c'};'>{total_weight:.0f}%</span></b></div>",
                 unsafe_allow_html=True
             )
-            st.progress(min(total_weight / 100, 1.0))
     
             if total_weight != 100:
-                st.error("Die Summe der Gewichte muss **genau 100%** ergeben!", icon="⚠️")
-                st.caption("Passe die Slider an, bis die Summe exakt 100% beträgt.")
+                st.error("Summe ist nicht 100%.")
                 st.stop()
             else:
-                # Gewichte anwenden wie vorher:
+                # Berechnung wie gehabt:
                 weights_np = np.array(weights) / 100
                 returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
                 returns_df = returns_df.dropna()
@@ -464,6 +487,7 @@ def main():
                         metrics_fmt[col] = metrics_fmt[col].round(2)
                 metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
                 st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
