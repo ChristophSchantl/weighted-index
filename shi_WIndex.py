@@ -156,7 +156,7 @@ def plot_performance(cumulative_dict):
 
         if name in ["Composite Index", "Eigener Index"]:
             ax2.fill_between(x, y, 0, alpha=0.18, color="black")
-            ax2.plot(x, y, linewidth=2.2, color="black", label=name)
+            ax2.plot(x, y, linewidth=0.5, color="black", label=name)
         else:
             ax2.fill_between(x, y, 0, alpha=0.3)
             ax2.plot(x, y, linewidth=0.5, label=name)
