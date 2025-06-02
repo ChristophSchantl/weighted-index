@@ -443,35 +443,36 @@ def main():
             if st.button("Setze optimale Sharpe-Ratio-Gewichte"):
                 for i, asset in enumerate(asset_names[:-1]):
                     st.session_state[f"weight_{asset}_slider"] = int(opt_weights_percent[i])
-                # der letzte wird automatisch gesetzt, muss hier nicht extra!
+                # Der letzte wird unten als "auto" berechnet.
     
-            # --- 3. Slider-Logik: Letzter Wert erzwingt immer Summe 100 ---
+            # --- 3. Slider-Logik: Initialisierung ---
+            for i in range(num_assets - 1):
+                slider_key = f"weight_{asset_names[i]}_slider"
+                if slider_key not in st.session_state:
+                    st.session_state[slider_key] = int(opt_weights_percent[i])
+    
+            # --- 4. Slider Rendering ---
             sliders = []
             cols = st.columns(num_assets)
             for i in range(num_assets - 1):
-                slider_key = f"weight_{asset_names[i]}_slider"
-                # Initialisiere im Session State, falls noch nicht da:
-                if slider_key not in st.session_state:
-                    st.session_state[slider_key] = int(opt_weights_percent[i])
                 rest = 100 - sum(sliders) if sliders else 100
                 max_value = max(0, rest)
-                slider_value = min(st.session_state[slider_key], max_value)
-                val = cols[i].slider(
-                    f"{asset_names[i]}",
-                    min_value=0,
-                    max_value=max_value,
-                    value=slider_value,
-                    step=1,
-                    key=slider_key
+                slider_value = min(st.session_state[f"weight_{asset_names[i]}_slider"], max_value)
+                sliders.append(
+                    cols[i].slider(
+                        f"{asset_names[i]}",
+                        min_value=0,
+                        max_value=max_value,
+                        value=slider_value,
+                        step=1,
+                        key=f"weight_{asset_names[i]}_slider"
+                    )
                 )
-                sliders.append(val)
-                st.session_state[slider_key] = val  # Updates Session State im Loop
-    
-            # Der letzte Wert als "auto": immer so, dass es 100% ergibt!
+            # Der letzte Wert: exakt auf 100%!
             last_weight = max(0, 100 - sum(sliders))
             sliders.append(last_weight)
             last_key = f"weight_{asset_names[-1]}_auto"
-            st.session_state[last_key] = last_weight  # Immer updaten!
+            st.session_state[last_key] = last_weight
             cols[-1].number_input(
                 f"{asset_names[-1]} (auto)",
                 min_value=0,
@@ -547,6 +548,7 @@ def main():
                     metrics_fmt[col] = metrics_fmt[col].round(2)
             metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
             st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
