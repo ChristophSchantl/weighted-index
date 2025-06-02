@@ -134,6 +134,9 @@ def plot_performance(cumulative_dict):
     st.pyplot(fig)
 
     fig2, ax2 = plt.subplots(figsize=(6, 3))
+    
+    
+    
     for name, cum in cumulative_dict.items():
         if cum is None or len(cum) == 0:
             continue
@@ -150,8 +153,17 @@ def plot_performance(cumulative_dict):
             y = y.flatten()
         if len(x) != len(y):
             continue
-        ax2.fill_between(x, y, 0, alpha=0.3)
-        ax2.plot(x, y, linewidth=0.5, label=name)
+
+        if name in ["Composite Index", "Eigener Index"]:
+            ax2.fill_between(x, y, 0, alpha=0.18, color="black")
+            ax2.plot(x, y, linewidth=2.2, color="black", label=name)
+        else:
+            ax2.fill_between(x, y, 0, alpha=0.3)
+            ax2.plot(x, y, linewidth=0.5, label=name)
+
+
+
+    
     ax2.set_title("Drawdown-Verlauf", fontsize=8, pad=8)
     ax2.set_ylabel("Drawdown", fontsize=8)
     ax2.legend(loc='center left', bbox_to_anchor=(1.0, 0.5), frameon=False, fontsize=5)
