@@ -420,62 +420,62 @@ def main():
             st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
         else:
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
+            returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()}).dropna()
     
-            # --- Schritt 1: Optimale Gewichte (Sharpe Ratio Maximum) berechnen ---
-            returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
-            returns_df = returns_df.dropna()
+            # 1. Optimale Sharpe-Ratio-Gewichte berechnen
             def neg_sharpe(weights):
-                portfolio_return = np.sum(returns_df.mean() * weights) * 252
-                portfolio_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
-                sharpe = (portfolio_return - RISK_FREE_RATE) / portfolio_vol if portfolio_vol > 0 else -np.inf
+                port_ret = np.sum(returns_df.mean() * weights) * 252
+                port_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
+                sharpe = (port_ret - RISK_FREE_RATE) / port_vol if port_vol > 0 else -np.inf
                 return -sharpe
             cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
             bounds = tuple((0, 1) for _ in range(num_assets))
             x0 = np.ones(num_assets) / num_assets
             opt_result = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
-    
             if opt_result.success:
                 opt_weights = opt_result.x
                 opt_weights_percent = (opt_weights * 100).round().astype(int)
             else:
                 opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
     
-            # --- Schritt 2: Slider mit optimalen Werten initialisieren ---
-            # Nutze Session State, damit die Werte nur beim ersten Laden gesetzt werden
-            for i, asset in enumerate(asset_names):
-                slider_key = f"weight_{asset}_slider"
-                if slider_key not in st.session_state:
-                    st.session_state[slider_key] = opt_weights_percent[i]
+            # 2. Button: Optimum auf die Slider übernehmen
+            if st.button("Setze optimale Sharpe-Ratio-Gewichte"):
+                for i, asset in enumerate(asset_names):
+                    st.session_state[f"weight_{asset}_slider"] = int(opt_weights_percent[i])
     
+            # 3. Slider (nutzen nur st.session_state als Wert)
             sliders = []
             cols = st.columns(num_assets)
             for i in range(num_assets - 1):
+                slider_key = f"weight_{asset_names[i]}_slider"
+                if slider_key not in st.session_state:
+                    st.session_state[slider_key] = int(opt_weights_percent[i])
                 rest = 100 - sum(sliders) if sliders else 100
                 max_value = max(0, rest)
-                slider_value = st.session_state[f"weight_{asset_names[i]}_slider"]
                 sliders.append(
                     cols[i].slider(
                         f"{asset_names[i]}",
                         min_value=0,
                         max_value=max_value,
-                        value=slider_value,
+                        value=st.session_state[slider_key],
                         step=1,
-                        key=f"weight_{asset_names[i]}_slider"
+                        key=slider_key
                     )
                 )
             sum_sliders = sum(sliders)
             last_weight = max(0, 100 - sum_sliders)
-    
+            last_key = f"weight_{asset_names[-1]}_auto"
+            if last_key not in st.session_state:
+                st.session_state[last_key] = last_weight
             cols[-1].number_input(
                 f"{asset_names[-1]} (auto)",
                 min_value=0,
                 max_value=100,
                 value=last_weight,
                 step=1,
-                key=f"weight_{asset_names[-1]}_auto",
+                key=last_key,
                 disabled=True
             )
-    
             weights = sliders + [last_weight]
             total_weight = sum(weights)
     
@@ -485,11 +485,11 @@ def main():
                 unsafe_allow_html=True
             )
     
-            # Anzeige der optimalen Sharpe-Ratio-Gewichte unterhalb
+            # Anzeige der optimalen Gewichte
             st.markdown("""
                 <div style='margin-bottom:10px;font-size:1.1em;'>
                 <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
-                <b>Optimale Gewichtung für maximales Sharpe Ratio (automatisch geladen):</b>
+                <b>Optimale Gewichtung für maximales Sharpe Ratio (automatisch berechnet):</b>
                 </div>
                 """, unsafe_allow_html=True)
             col_count = min(4, len(asset_names))
@@ -515,7 +515,7 @@ def main():
                         unsafe_allow_html=True
                     )
     
-            # --- Schritt 3: Deine bisherige Gewichtung und Performance ---
+            # --- Performance usw. ---
             if total_weight != 100:
                 st.error("Summe ist nicht 100%.")
                 st.stop()
@@ -545,6 +545,7 @@ def main():
                         metrics_fmt[col] = metrics_fmt[col].round(2)
                 metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
                 st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
