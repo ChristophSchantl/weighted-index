@@ -418,9 +418,6 @@ def main():
     
         if num_assets < 2:
             st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
-        
-        
-        
         else:
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
             default = [int(round(100/num_assets)) for _ in range(num_assets - 1)]
@@ -464,74 +461,65 @@ def main():
                 unsafe_allow_html=True
             )
     
-            # --- Optimale Sharpe-Ratio-Gewichtung berechnen ---
-            # 1. Daten als DataFrame (gemeinsamer Index, Tagesrenditen)
-            returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
-            returns_df = returns_df.dropna()
+            # --- OPTIMIERUNG nur auf Knopfdruck ---
+            with st.expander("🔎 Optimale Sharpe-Ratio-Gewichtung berechnen"):
+                if st.button("Optimale Sharpe-Ratio-Gewichte berechnen"):
+                    # 1. Daten als DataFrame (gemeinsamer Index, Tagesrenditen)
+                    returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
+                    returns_df = returns_df.dropna()
     
-            def neg_sharpe(weights):
-                # annualize returns (252 trading days)
-                portfolio_return = np.sum(returns_df.mean() * weights) * 252
-                portfolio_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
-                sharpe = (portfolio_return - RISK_FREE_RATE) / portfolio_vol if portfolio_vol > 0 else -np.inf
-                return -sharpe
+                    def neg_sharpe(weights):
+                        portfolio_return = np.sum(returns_df.mean() * weights) * 252
+                        portfolio_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
+                        sharpe = (portfolio_return - RISK_FREE_RATE) / portfolio_vol if portfolio_vol > 0 else -np.inf
+                        return -sharpe
     
-            # Constraints: sum(weights)=1, bounds=[0,1]
-            cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-            bounds = tuple((0, 1) for _ in range(num_assets))
-            x0 = np.ones(num_assets) / num_assets
-            opt_result = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
-
-
-
-
-
-            
-            if opt_result.success:
-                opt_weights = opt_result.x
-                opt_weights_percent = (opt_weights * 100).round().astype(int)
-                st.markdown("""
-                    <div style='margin-bottom:10px;font-size:1.1em;'>
-                    <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
-                    <b>Optimale Gewichtung für maximales Sharpe Ratio:</b>
-                    </div>
-                    """, unsafe_allow_html=True)
-                col_count = min(4, len(asset_names))
-                cols = st.columns(col_count)
-                for i, (asset, w) in enumerate(zip(asset_names, opt_weights_percent)):
-                    with cols[i % col_count]:
-                        st.markdown(
-                            f"""
-                            <div style='
-                                border-radius: 0.6em;
-                                border: 1px solid #b4d5ee;
-                                background: #f8fbfd;
-                                padding: 0.7em 1em 0.6em 1em;
-                                margin-bottom: 0.5em;
-                                text-align: center;
-                                min-width: 110px;
-                                box-shadow: 0 1px 4px #dbe9f4bb;
-                            '>
-                                <span style='font-size:1.11em;font-weight:600;'>{asset}</span><br>
-                                <span style='font-size:1.3em;color:#146eb4;font-weight:700;'>{w}%</span>
+                    cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+                    bounds = tuple((0, 1) for _ in range(num_assets))
+                    x0 = np.ones(num_assets) / num_assets
+                    opt_result = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
+    
+                    if opt_result.success:
+                        opt_weights = opt_result.x
+                        opt_weights_percent = (opt_weights * 100).round().astype(int)
+                        st.markdown("""
+                            <div style='margin-bottom:10px;font-size:1.1em;'>
+                            <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
+                            <b>Optimale Gewichtung für maximales Sharpe Ratio:</b>
                             </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-            else:
-                st.warning("Sharpe-Ratio-Optimierung fehlgeschlagen.")
-
-
-
-
-
-
-            
+                            """, unsafe_allow_html=True)
+                        col_count = min(4, len(asset_names))
+                        cols = st.columns(col_count)
+                        for i, (asset, w) in enumerate(zip(asset_names, opt_weights_percent)):
+                            with cols[i % col_count]:
+                                st.markdown(
+                                    f"""
+                                    <div style='
+                                        border-radius: 0.6em;
+                                        border: 1px solid #b4d5ee;
+                                        background: #f8fbfd;
+                                        padding: 0.7em 1em 0.6em 1em;
+                                        margin-bottom: 0.5em;
+                                        text-align: center;
+                                        min-width: 110px;
+                                        box-shadow: 0 1px 4px #dbe9f4bb;
+                                    '>
+                                        <span style='font-size:1.11em;font-weight:600;'>{asset}</span><br>
+                                        <span style='font-size:1.3em;color:#146eb4;font-weight:700;'>{w}%</span>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True
+                                )
+                    else:
+                        st.warning("Sharpe-Ratio-Optimierung fehlgeschlagen.")
+    
             # --- Eigene Gewichtung anzeigen ---
             if total_weight != 100:
                 st.error("Summe ist nicht 100%.")
                 st.stop()
             else:
+                returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
+                returns_df = returns_df.dropna()
                 weights_np = np.array(weights) / 100
                 custom_index_returns = (returns_df * weights_np).sum(axis=1)
                 custom_index_cum = (1 + custom_index_returns).cumprod()
@@ -557,6 +545,7 @@ def main():
                         metrics_fmt[col] = metrics_fmt[col].round(2)
                 metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
                 st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
