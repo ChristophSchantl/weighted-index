@@ -406,36 +406,36 @@ def main():
             st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
         else:
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
-    
-            # Standardwerte für die ersten N-1 Assets
             default = [int(round(100/num_assets)) for _ in range(num_assets - 1)]
-            slider_keys = [f"weight_{asset_names[i]}_slider" for i in range(num_assets - 1)]
-    
-            # Dynamische Limits für die Slider
             sliders = []
-            max_values = [100] * (num_assets - 1)
+            sum_so_far = 0
+    
+            cols = st.columns(num_assets)
             for i in range(num_assets - 1):
-                # Das Maximum dieses Sliders ist: 100 - Summe der bisherigen Slider - (Anzahl verbleibender Slider - 1) * 0
-                if i == 0:
-                    max_value = 100
+                # Wieviel Gewicht ist für diesen Slider noch übrig?
+                rest = 100 - sum(sliders) if sliders else 100
+                max_value = max(0, rest)
+                # Streamlit-Slider muss min_value < max_value sein!
+                if max_value == 0:
+                    slider_value = 0
                 else:
-                    max_value = 100 - sum(sliders[:i])
-                value = default[i] if default[i] <= max_value else max_value
+                    # Standardwert auf Rest begrenzen:
+                    slider_value = min(default[i], max_value)
                 sliders.append(
-                    st.slider(
+                    cols[i].slider(
                         f"{asset_names[i]}",
                         min_value=0,
                         max_value=max_value,
-                        value=value,
+                        value=slider_value,
                         step=1,
-                        key=slider_keys[i]
+                        key=f"weight_{asset_names[i]}_slider"
                     )
                 )
     
             sum_sliders = sum(sliders)
             last_weight = max(0, 100 - sum_sliders)
     
-            st.number_input(
+            cols[-1].number_input(
                 f"{asset_names[-1]} (auto)",
                 min_value=0,
                 max_value=100,
@@ -445,7 +445,6 @@ def main():
                 disabled=True
             )
     
-            # Für die spätere Berechnung:
             weights = sliders + [last_weight]
             total_weight = sum(weights)
     
