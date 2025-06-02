@@ -439,22 +439,26 @@ def main():
             else:
                 opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
     
-            # --- 2. Slider-Logik: Initialisierung ---
-            # Alle Keys existieren lassen (wichtig für Button/State)
-            for i in range(num_assets - 1):
-                slider_key = f"weight_{asset_names[i]}_slider"
-                if slider_key not in st.session_state:
-                    st.session_state[slider_key] = int(opt_weights_percent[i])
+            # --- 2. State-Flag für "Setze optimale Sharpe-Ratio-Gewichte" ---
+            set_opt_weights = st.session_state.get("set_opt_weights", False)
+            btn = st.button("Setze optimale Sharpe-Ratio-Gewichte", key="set_opt_btn")
+            if btn:
+                st.session_state["set_opt_weights"] = True
+                st.experimental_rerun()  # Sofort rerendern, damit Werte übernommen werden
     
-            # --- 3. Slider Rendering ---
+            # --- 3. Slider-Logik: Initialisierung & Rendering ---
             sliders = []
             cols = st.columns(num_assets)
             for i in range(num_assets - 1):
+                slider_key = f"weight_{asset_names[i]}_slider"
+                if set_opt_weights:
+                    value = int(opt_weights_percent[i])
+                    st.session_state[slider_key] = value  # Optional, sorgt für Klarheit im State
+                else:
+                    value = st.session_state.get(slider_key, int(opt_weights_percent[i]))
                 rest = 100 - sum(sliders)
                 max_value = max(0, rest)
                 min_value = 0
-                slider_key = f"weight_{asset_names[i]}_slider"
-                value = st.session_state.get(slider_key, 0)
                 value = min(max(value, min_value), max_value)
                 sliders.append(
                     cols[i].slider(
@@ -466,6 +470,10 @@ def main():
                         key=slider_key,
                     )
                 )
+    
+            # Nach einmaliger Übernahme: Flag zurücksetzen!
+            if set_opt_weights:
+                st.session_state["set_opt_weights"] = False
     
             # Der letzte Wert: exakt auf 100%!
             last_weight = max(0, 100 - sum(sliders))
@@ -492,15 +500,7 @@ def main():
                 unsafe_allow_html=True
             )
     
-            # --- 5. Button für Sharpe-Ratio-Gewichte direkt unter die Summenanzeige! ---
-            set_opt_weights = st.button("Setze optimale Sharpe-Ratio-Gewichte")
-            if set_opt_weights:
-                # Jetzt sind die Keys garantiert vorhanden!
-                for i, asset in enumerate(asset_names[:-1]):
-                    st.session_state[f"weight_{asset}_slider"] = int(opt_weights_percent[i])
-                # Der letzte Wert wird immer automatisch unten gesetzt
-    
-            # --- 6. Anzeige der optimalen Gewichte ---
+            # --- 5. Anzeige der optimalen Gewichte ---
             st.markdown("""
                 <div style='margin-bottom:10px;font-size:1.1em;'>
                 <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
@@ -556,6 +556,7 @@ def main():
                     metrics_fmt[col] = metrics_fmt[col].round(2)
             metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
             st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
