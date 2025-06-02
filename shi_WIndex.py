@@ -156,7 +156,7 @@ def plot_performance(cumulative_dict):
 
         if name in ["Composite Index", "Eigener Index"]:
             ax2.fill_between(x, y, 0, alpha=0.18, color="black")
-            ax2.plot(x, y, linewidth=0.5, color="black", label=name)
+            ax2.plot(x, y, linewidth=0.25, color="black", label=name)
         else:
             ax2.fill_between(x, y, 0, alpha=0.3)
             ax2.plot(x, y, linewidth=0.25, label=name)
@@ -459,7 +459,17 @@ def main():
     
             weights = sliders + [last_weight]
             total_weight = sum(weights)
-    
+
+
+
+
+
+
+
+
+
+
+            
             st.markdown(
                 f"<div style='margin-top:10px;margin-bottom:4px;font-size:1.15em;'><b>Summe der Gewichte: "
                 f"<span style='color:{'#3cb371' if total_weight == 100 else '#e74c3c'};'>{total_weight:.0f}%</span></b></div>",
