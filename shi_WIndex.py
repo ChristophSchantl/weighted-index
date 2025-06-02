@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 import warnings
 import seaborn as sns
+import scipy.optimize as opt
 from datetime import datetime, timedelta
 
 # ---- Styling & Optionen ----
@@ -409,6 +410,7 @@ def main():
 
    # --- Composite Index  ---
     
+
     with tabs[4]:
         st.subheader("🔀 Composite Index aus gewählten Assets")
         asset_names = list(returns_dict.keys())
@@ -420,19 +422,12 @@ def main():
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
             default = [int(round(100/num_assets)) for _ in range(num_assets - 1)]
             sliders = []
-            sum_so_far = 0
     
             cols = st.columns(num_assets)
             for i in range(num_assets - 1):
-                # Wieviel Gewicht ist für diesen Slider noch übrig?
                 rest = 100 - sum(sliders) if sliders else 100
                 max_value = max(0, rest)
-                # Streamlit-Slider muss min_value < max_value sein!
-                if max_value == 0:
-                    slider_value = 0
-                else:
-                    # Standardwert auf Rest begrenzen:
-                    slider_value = min(default[i], max_value)
+                slider_value = min(default[i], max_value) if max_value > 0 else 0
                 sliders.append(
                     cols[i].slider(
                         f"{asset_names[i]}",
@@ -459,25 +454,48 @@ def main():
     
             weights = sliders + [last_weight]
             total_weight = sum(weights)
-
-            
+    
             st.markdown(
                 f"<div style='margin-top:10px;margin-bottom:4px;font-size:1.15em;'><b>Summe der Gewichte: "
                 f"<span style='color:{'#3cb371' if total_weight == 100 else '#e74c3c'};'>{total_weight:.0f}%</span></b></div>",
                 unsafe_allow_html=True
             )
-
-            
+    
+            # --- Optimale Sharpe-Ratio-Gewichtung berechnen ---
+            # 1. Daten als DataFrame (gemeinsamer Index, Tagesrenditen)
+            returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
+            returns_df = returns_df.dropna()
+    
+            def neg_sharpe(weights):
+                # annualize returns (252 trading days)
+                portfolio_return = np.sum(returns_df.mean() * weights) * 252
+                portfolio_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
+                sharpe = (portfolio_return - RISK_FREE_RATE) / portfolio_vol if portfolio_vol > 0 else -np.inf
+                return -sharpe
+    
+            # Constraints: sum(weights)=1, bounds=[0,1]
+            cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+            bounds = tuple((0, 1) for _ in range(num_assets))
+            x0 = np.ones(num_assets) / num_assets
+            opt_result = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
+    
+            if opt_result.success:
+                opt_weights = opt_result.x
+                opt_weights_percent = (opt_weights * 100).round(1)
+                st.info(
+                    f"**Optimale Gewichtung für maximales Sharpe Ratio:**<br>"
+                    + "<br>".join([f"{asset}: <b>{w:.1f}%</b>" for asset, w in zip(asset_names, opt_weights_percent)]),
+                    icon="🔎"
+                )
+            else:
+                st.warning("Sharpe-Ratio-Optimierung fehlgeschlagen.")
+    
+            # --- Eigene Gewichtung anzeigen ---
             if total_weight != 100:
                 st.error("Summe ist nicht 100%.")
                 st.stop()
-
-        
-
             else:
                 weights_np = np.array(weights) / 100
-                returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
-                returns_df = returns_df.dropna()
                 custom_index_returns = (returns_df * weights_np).sum(axis=1)
                 custom_index_cum = (1 + custom_index_returns).cumprod()
                 compare_cum = cumulative_dict.copy()
@@ -502,10 +520,6 @@ def main():
                         metrics_fmt[col] = metrics_fmt[col].round(2)
                 metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
                 st.dataframe(metrics_fmt, use_container_width=True, height=350)
-
-
-
-
 
 
 
