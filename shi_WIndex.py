@@ -439,27 +439,40 @@ def main():
             else:
                 opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
     
-            # --- 2. State-Flag für "Setze optimale Sharpe-Ratio-Gewichte" ---
+            # --- 2. Slider-Logik: Initialisierung & Rendering ---
+            # Button für optimale Gewichte
             set_opt_weights = st.session_state.get("set_opt_weights", False)
             btn = st.button("Setze optimale Sharpe-Ratio-Gewichte", key="set_opt_btn")
             if btn:
-                st.session_state["set_opt_weights"] = True
-                st.rerun()  # Sofort rerendern, damit Werte übernommen werden
+                set_opt_weights = True
+                # Alle Slider auf optimale Werte setzen
+                for i in range(num_assets - 1):
+                    st.session_state[f"weight_{asset_names[i]}_slider"] = int(opt_weights_percent[i])
+                st.session_state["set_opt_weights"] = False  # Flag zurücksetzen nach setzen
+                st.rerun()
     
-            # --- 3. Slider-Logik: Initialisierung & Rendering ---
             sliders = []
             cols = st.columns(num_assets)
+            rest = 100
             for i in range(num_assets - 1):
                 slider_key = f"weight_{asset_names[i]}_slider"
-                if set_opt_weights:
-                    value = int(opt_weights_percent[i])
-                    st.session_state[slider_key] = value  # Optional, sorgt für Klarheit im State
-                else:
-                    value = st.session_state.get(slider_key, int(opt_weights_percent[i]))
-                rest = 100 - sum(sliders)
                 max_value = max(0, rest)
                 min_value = 0
-                value = min(max(value, min_value), max_value)
+    
+                # Wert aus Session State oder von optimalen Gewichten
+                if slider_key not in st.session_state:
+                    value = int(opt_weights_percent[i])
+                else:
+                    value = st.session_state[slider_key]
+    
+                # Immer im gültigen Bereich halten!
+                if value > max_value:
+                    value = max_value
+                if value < min_value:
+                    value = min_value
+    
+                st.session_state[slider_key] = value  # Explizit synchronisieren
+    
                 sliders.append(
                     cols[i].slider(
                         f"{asset_names[i]}",
@@ -470,16 +483,13 @@ def main():
                         key=slider_key,
                     )
                 )
-    
-            # Nach einmaliger Übernahme: Flag zurücksetzen!
-            if set_opt_weights:
-                st.session_state["set_opt_weights"] = False
+                rest -= value
     
             # Der letzte Wert: exakt auf 100%!
             last_weight = max(0, 100 - sum(sliders))
             sliders.append(last_weight)
             last_key = f"weight_{asset_names[-1]}_auto"
-            st.session_state[last_key] = last_weight
+            # NICHT im Session State setzen, damit kein Warning kommt!
             cols[-1].number_input(
                 f"{asset_names[-1]} (auto)",
                 min_value=0,
@@ -556,6 +566,7 @@ def main():
                     metrics_fmt[col] = metrics_fmt[col].round(2)
             metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
             st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
