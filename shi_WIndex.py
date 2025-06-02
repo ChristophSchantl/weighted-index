@@ -516,11 +516,13 @@ def main():
                                 box-shadow: 0 1px 4px #dbe9f4bb;
                             '>
                                 <span style='font-size:1.11em;font-weight:600;'>{asset}</span><br>
-                                <span style='
-
-
-
-
+                                <span style='font-size:1.3em;color:#146eb4;font-weight:700;'>{w:.1f}%</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+            else:
+                st.warning("Sharpe-Ratio-Optimierung fehlgeschlagen.")
 
 
 
@@ -528,9 +530,6 @@ def main():
 
 
             
-            else:
-                st.warning("Sharpe-Ratio-Optimierung fehlgeschlagen.")
-    
             # --- Eigene Gewichtung anzeigen ---
             if total_weight != 100:
                 st.error("Summe ist nicht 100%.")
