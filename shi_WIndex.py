@@ -481,18 +481,50 @@ def main():
             bounds = tuple((0, 1) for _ in range(num_assets))
             x0 = np.ones(num_assets) / num_assets
             opt_result = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
-    
+
+
+
+
+
+
+
+
+            
             if opt_result.success:
                 opt_weights = opt_result.x
                 opt_weights_percent = (opt_weights * 100).round(1)
+                st.markdown("""
+                    <div style='margin-bottom:10px;font-size:1.1em;'>
+                    <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
+                    <b>Optimale Gewichtung für maximales Sharpe Ratio:</b>
+                    </div>
+                    """, unsafe_allow_html=True)
+                col_count = min(4, len(asset_names))
+                cols = st.columns(col_count)
+                for i, (asset, w) in enumerate(zip(asset_names, opt_weights_percent)):
+                    with cols[i % col_count]:
+                        st.markdown(
+                            f"""
+                            <div style='
+                                border-radius: 0.6em;
+                                border: 1px solid #b4d5ee;
+                                background: #f8fbfd;
+                                padding: 0.7em 1em 0.6em 1em;
+                                margin-bottom: 0.5em;
+                                text-align: center;
+                                min-width: 110px;
+                                box-shadow: 0 1px 4px #dbe9f4bb;
+                            '>
+                                <span style='font-size:1.11em;font-weight:600;'>{asset}</span><br>
+                                <span style='
 
 
-                
-                st.info(
-                    "🔎 Optimale Gewichtung für maximales Sharpe Ratio:\n"
-                    + "\n".join([f"{asset}: {w:.1f}%" for asset, w in zip(asset_names, opt_weights_percent)])
-                )
-            
+
+
+
+
+
+
 
 
             
