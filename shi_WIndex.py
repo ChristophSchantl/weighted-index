@@ -422,12 +422,13 @@ def main():
             st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
             returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()}).dropna()
     
-            # 1. Optimale Sharpe-Ratio-Gewichte berechnen
+            # --- 1. Optimale Sharpe-Ratio-Gewichte berechnen ---
             def neg_sharpe(weights):
                 port_ret = np.sum(returns_df.mean() * weights) * 252
                 port_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
                 sharpe = (port_ret - RISK_FREE_RATE) / port_vol if port_vol > 0 else -np.inf
                 return -sharpe
+    
             cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
             bounds = tuple((0, 1) for _ in range(num_assets))
             x0 = np.ones(num_assets) / num_assets
@@ -438,35 +439,39 @@ def main():
             else:
                 opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
     
-            # 2. Button: Optimum auf die Slider übernehmen
+            # --- 2. Button: Optimum auf die Slider übernehmen ---
             if st.button("Setze optimale Sharpe-Ratio-Gewichte"):
-                for i, asset in enumerate(asset_names):
+                for i, asset in enumerate(asset_names[:-1]):
                     st.session_state[f"weight_{asset}_slider"] = int(opt_weights_percent[i])
+                # der letzte wird automatisch gesetzt, muss hier nicht extra!
     
-            # 3. Slider (nutzen nur st.session_state als Wert)
+            # --- 3. Slider-Logik: Letzter Wert erzwingt immer Summe 100 ---
             sliders = []
             cols = st.columns(num_assets)
             for i in range(num_assets - 1):
                 slider_key = f"weight_{asset_names[i]}_slider"
+                # Initialisiere im Session State, falls noch nicht da:
                 if slider_key not in st.session_state:
                     st.session_state[slider_key] = int(opt_weights_percent[i])
                 rest = 100 - sum(sliders) if sliders else 100
                 max_value = max(0, rest)
-                sliders.append(
-                    cols[i].slider(
-                        f"{asset_names[i]}",
-                        min_value=0,
-                        max_value=max_value,
-                        value=st.session_state[slider_key],
-                        step=1,
-                        key=slider_key
-                    )
+                slider_value = min(st.session_state[slider_key], max_value)
+                val = cols[i].slider(
+                    f"{asset_names[i]}",
+                    min_value=0,
+                    max_value=max_value,
+                    value=slider_value,
+                    step=1,
+                    key=slider_key
                 )
-            sum_sliders = sum(sliders)
-            last_weight = max(0, 100 - sum_sliders)
+                sliders.append(val)
+                st.session_state[slider_key] = val  # Updates Session State im Loop
+    
+            # Der letzte Wert als "auto": immer so, dass es 100% ergibt!
+            last_weight = max(0, 100 - sum(sliders))
+            sliders.append(last_weight)
             last_key = f"weight_{asset_names[-1]}_auto"
-            if last_key not in st.session_state:
-                st.session_state[last_key] = last_weight
+            st.session_state[last_key] = last_weight  # Immer updaten!
             cols[-1].number_input(
                 f"{asset_names[-1]} (auto)",
                 min_value=0,
@@ -476,7 +481,8 @@ def main():
                 key=last_key,
                 disabled=True
             )
-            weights = sliders + [last_weight]
+    
+            weights = sliders
             total_weight = sum(weights)
     
             st.markdown(
@@ -516,35 +522,32 @@ def main():
                     )
     
             # --- Performance usw. ---
-            if total_weight != 100:
-                st.error("Summe ist nicht 100%.")
-                st.stop()
-            else:
-                weights_np = np.array(weights) / 100
-                custom_index_returns = (returns_df * weights_np).sum(axis=1)
-                custom_index_cum = (1 + custom_index_returns).cumprod()
-                compare_cum = cumulative_dict.copy()
-                compare_cum["Composite Index"] = custom_index_cum
-                compare_ret = returns_dict.copy()
-                compare_ret["Composite Index"] = custom_index_returns
+            weights_np = np.array(weights) / 100
+            custom_index_returns = (returns_df * weights_np).sum(axis=1)
+            custom_index_cum = (1 + custom_index_returns).cumprod()
+            compare_cum = cumulative_dict.copy()
+            compare_cum["Composite Index"] = custom_index_cum
+            compare_ret = returns_dict.copy()
+            compare_ret["Composite Index"] = custom_index_returns
     
-                st.markdown("**Kumulative Performance (Composite Index vs. Einzelassets):**")
-                plot_performance(compare_cum)
-                st.markdown("**Risikokennzahlen (Composite Index vs. Einzelassets):**")
-                metrics = calculate_metrics(compare_ret, compare_cum)
-                percent_cols = [
-                    'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
-                    'CVaR (95%)', 'Win Rate', 'Avg Win', 'Avg Loss', 'Positive Months'
-                ]
-                metrics_fmt = metrics.copy()
-                for col in percent_cols:
-                    if col in metrics_fmt.columns:
-                        metrics_fmt[col] = (metrics_fmt[col]*100).round(2).astype(str) + '%'
-                for col in ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Omega Ratio', 'Tail Ratio', 'Profit Factor']:
-                    if col in metrics_fmt.columns:
-                        metrics_fmt[col] = metrics_fmt[col].round(2)
-                metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
-                st.dataframe(metrics_fmt, use_container_width=True, height=350)
+            st.markdown("**Kumulative Performance (Composite Index vs. Einzelassets):**")
+            plot_performance(compare_cum)
+            st.markdown("**Risikokennzahlen (Composite Index vs. Einzelassets):**")
+            metrics = calculate_metrics(compare_ret, compare_cum)
+            percent_cols = [
+                'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
+                'CVaR (95%)', 'Win Rate', 'Avg Win', 'Avg Loss', 'Positive Months'
+            ]
+            metrics_fmt = metrics.copy()
+            for col in percent_cols:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = (metrics_fmt[col]*100).round(2).astype(str) + '%'
+            for col in ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Omega Ratio', 'Tail Ratio', 'Profit Factor']:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = metrics_fmt[col].round(2)
+            metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
+            st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
