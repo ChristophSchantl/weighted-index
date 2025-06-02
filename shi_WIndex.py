@@ -467,27 +467,12 @@ def main():
                 unsafe_allow_html=True
             )
 
-
-
-
-
-    
-            # >>>>>>> NEU: Nur nach Button-Druck berechnen
-   
-            if st.button("Composite Index berechnen"):
-                if total_weight != 100:
-                    st.error("Summe ist nicht 100%.")
-
             
-            #if total_weight != 100:
-               # st.error("Summe ist nicht 100%.")
-              #  st.stop()
+            if total_weight != 100:
+                st.error("Summe ist nicht 100%.")
+                st.stop()
 
-
-
-
-
-
+        
 
             else:
                 weights_np = np.array(weights) / 100
