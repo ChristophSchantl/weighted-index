@@ -395,89 +395,76 @@ def main():
             st.warning("Keine Daten vorhanden.")
 
 
-        # Tab 5: Composite Index
-    with tabs[4]:
-        st.subheader("🔀 Composite Index aus gewählten Assets")
-        asset_names = list(returns_dict.keys())
-        num_assets = len(asset_names)
+   # --- Composite Index  ---
     
-        if num_assets < 2:
-            st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
-        else:
-            st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
-            default = [int(round(100/num_assets)) for _ in range(num_assets-1)]
-    
-            # Speichere die Sliderwerte
-            weights = []
-            cols = st.columns(num_assets)
-            sum_so_far = 0
-    
-            # Erst alle außer den letzten Asset als Slider
-            for i in range(num_assets-1):
-                w = cols[i].slider(
-                    f"{asset_names[i]}",
-                    min_value=0,
-                    max_value=100 - sum_so_far - (num_assets - i - 2),
-                    value=default[i] if i < len(default) else 0,
-                    step=1,
-                    key=f"weight_{asset_names[i]}_slider"
-                )
-                weights.append(w)
-                sum_so_far += w
-    
-            # Letzter Asset: Automatisch so, dass die Summe 100% ergibt
-            last_weight = max(0, 100 - sum_so_far)
-            weights.append(last_weight)
-            # "Slider" für den letzten Wert nur als Anzeige, nicht interaktiv
-            cols[-1].number_input(
-                f"{asset_names[-1]}",
+  with tabs[4]:
+    st.subheader("🔀 Composite Index aus gewählten Assets")
+    asset_names = list(returns_dict.keys())
+    num_assets = len(asset_names)
+
+    if num_assets < 2:
+        st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
+    else:
+        st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
+        default = [int(round(100/num_assets)) for _ in asset_names]
+
+        # Alle Slider frei zwischen 0 und 100%
+        weights = []
+        cols = st.columns(num_assets)
+        for i in range(num_assets):
+            w = cols[i].slider(
+                f"{asset_names[i]}",
                 min_value=0,
                 max_value=100,
-                value=last_weight,
+                value=default[i],
                 step=1,
-                key=f"weight_{asset_names[-1]}_auto",
-                disabled=True
+                key=f"weight_{asset_names[i]}_slider"
             )
-    
-            total_weight = sum(weights)
-            st.markdown(
-                f"<div style='margin-top:10px;margin-bottom:4px;font-size:1.15em;'><b>Summe der Gewichte: "
-                f"<span style='color:#3cb371;'>{total_weight:.0f}%</span></b></div>",
-                unsafe_allow_html=True
-            )
-    
-            if total_weight != 100:
-                st.error("Es gab einen Fehler bei der Berechnung. Die Summe ist nicht 100%.")
-                st.stop()
-            else:
-                # Dein Berechnungscode wie vorher:
-                weights_np = np.array(weights) / 100
-                returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
-                returns_df = returns_df.dropna()
-                custom_index_returns = (returns_df * weights_np).sum(axis=1)
-                custom_index_cum = (1 + custom_index_returns).cumprod()
-                compare_cum = cumulative_dict.copy()
-                compare_cum["Composite Index"] = custom_index_cum
-                compare_ret = returns_dict.copy()
-                compare_ret["Composite Index"] = custom_index_returns
-    
-                st.markdown("**Kumulative Performance (Composite Index vs. Einzelassets):**")
-                plot_performance(compare_cum)
-                st.markdown("**Risikokennzahlen (Composite Index vs. Einzelassets):**")
-                metrics = calculate_metrics(compare_ret, compare_cum)
-                percent_cols = [
-                    'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
-                    'CVaR (95%)', 'Win Rate', 'Avg Win', 'Avg Loss', 'Positive Months'
-                ]
-                metrics_fmt = metrics.copy()
-                for col in percent_cols:
-                    if col in metrics_fmt.columns:
-                        metrics_fmt[col] = (metrics_fmt[col]*100).round(2).astype(str) + '%'
-                for col in ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Omega Ratio', 'Tail Ratio', 'Profit Factor']:
-                    if col in metrics_fmt.columns:
-                        metrics_fmt[col] = metrics_fmt[col].round(2)
-                metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
-                st.dataframe(metrics_fmt, use_container_width=True, height=350)
+            weights.append(w)
+
+        total_weight = sum(weights)
+
+        st.markdown(
+            f"<div style='margin-top:10px;margin-bottom:4px;font-size:1.15em;'><b>Summe der Gewichte: "
+            f"<span style='color:{'#3cb371' if total_weight == 100 else '#e74c3c'};'>{total_weight:.0f}%</span></b></div>",
+            unsafe_allow_html=True
+        )
+        st.progress(min(total_weight / 100, 1.0))
+
+        if total_weight != 100:
+            st.error("Die Summe der Gewichte muss **genau 100%** ergeben!", icon="⚠️")
+            st.caption("Passe die Slider an, bis die Summe exakt 100% beträgt.")
+            st.stop()
+        else:
+            # Gewichte anwenden wie vorher:
+            weights_np = np.array(weights) / 100
+            returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
+            returns_df = returns_df.dropna()
+            custom_index_returns = (returns_df * weights_np).sum(axis=1)
+            custom_index_cum = (1 + custom_index_returns).cumprod()
+            compare_cum = cumulative_dict.copy()
+            compare_cum["Composite Index"] = custom_index_cum
+            compare_ret = returns_dict.copy()
+            compare_ret["Composite Index"] = custom_index_returns
+
+            st.markdown("**Kumulative Performance (Composite Index vs. Einzelassets):**")
+            plot_performance(compare_cum)
+            st.markdown("**Risikokennzahlen (Composite Index vs. Einzelassets):**")
+            metrics = calculate_metrics(compare_ret, compare_cum)
+            percent_cols = [
+                'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
+                'CVaR (95%)', 'Win Rate', 'Avg Win', 'Avg Loss', 'Positive Months'
+            ]
+            metrics_fmt = metrics.copy()
+            for col in percent_cols:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = (metrics_fmt[col]*100).round(2).astype(str) + '%'
+            for col in ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Omega Ratio', 'Tail Ratio', 'Profit Factor']:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = metrics_fmt[col].round(2)
+            metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
+            st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
