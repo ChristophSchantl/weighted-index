@@ -437,6 +437,14 @@ def main():
             if opt_result.success:
                 opt_weights = opt_result.x
                 opt_weights_percent = (opt_weights * 100).round().astype(int)
+                diff = 100 - opt_weights_percent.sum()
+                if diff != 0:
+                    decimals = opt_weights * 100 - np.floor(opt_weights * 100)
+                    if diff > 0:
+                        idx = np.argmax(decimals)
+                    else:
+                        idx = np.argmin(decimals)
+                    opt_weights_percent[idx] += diff
             else:
                 opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
     
