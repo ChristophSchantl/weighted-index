@@ -460,27 +460,36 @@ def main():
             weights = sliders + [last_weight]
             total_weight = sum(weights)
 
-
-
-
-
-
-
-
-
-
             
             st.markdown(
                 f"<div style='margin-top:10px;margin-bottom:4px;font-size:1.15em;'><b>Summe der Gewichte: "
                 f"<span style='color:{'#3cb371' if total_weight == 100 else '#e74c3c'};'>{total_weight:.0f}%</span></b></div>",
                 unsafe_allow_html=True
             )
+
+
+
+
+
     
-            if total_weight != 100:
-                st.error("Summe ist nicht 100%.")
-                st.stop()
+            # >>>>>>> NEU: Nur nach Button-Druck berechnen
+   
+            if st.button("Composite Index berechnen"):
+                if total_weight != 100:
+                    st.error("Summe ist nicht 100%.")
+
+            
+            #if total_weight != 100:
+               # st.error("Summe ist nicht 100%.")
+              #  st.stop()
+
+
+
+
+
+
+
             else:
-                # Berechnung wie gehabt:
                 weights_np = np.array(weights) / 100
                 returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()})
                 returns_df = returns_df.dropna()
