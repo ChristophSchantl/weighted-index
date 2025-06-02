@@ -440,6 +440,7 @@ def main():
                 opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
     
             # --- 2. Slider-Logik: Initialisierung ---
+            # Alle Keys existieren lassen (wichtig für Button/State)
             for i in range(num_assets - 1):
                 slider_key = f"weight_{asset_names[i]}_slider"
                 if slider_key not in st.session_state:
@@ -452,10 +453,8 @@ def main():
                 rest = 100 - sum(sliders)
                 max_value = max(0, rest)
                 min_value = 0
-                # Wert aus Session State holen oder 0
                 slider_key = f"weight_{asset_names[i]}_slider"
                 value = st.session_state.get(slider_key, 0)
-                # Wert im erlaubten Bereich halten
                 value = min(max(value, min_value), max_value)
                 sliders.append(
                     cols[i].slider(
@@ -494,10 +493,12 @@ def main():
             )
     
             # --- 5. Button für Sharpe-Ratio-Gewichte direkt unter die Summenanzeige! ---
-            if st.button("Setze optimale Sharpe-Ratio-Gewichte"):
+            set_opt_weights = st.button("Setze optimale Sharpe-Ratio-Gewichte")
+            if set_opt_weights:
+                # Jetzt sind die Keys garantiert vorhanden!
                 for i, asset in enumerate(asset_names[:-1]):
                     st.session_state[f"weight_{asset}_slider"] = int(opt_weights_percent[i])
-                # Der letzte Wert wird unten als "auto" berechnet.
+                # Der letzte Wert wird immer automatisch unten gesetzt
     
             # --- 6. Anzeige der optimalen Gewichte ---
             st.markdown("""
@@ -555,6 +556,7 @@ def main():
                     metrics_fmt[col] = metrics_fmt[col].round(2)
             metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
             st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
 
 
 
