@@ -455,19 +455,25 @@ def main():
             sliders = []
             cols = st.columns(num_assets)
             for i in range(num_assets - 1):
-                rest = 100 - sum(sliders) if sliders else 100
+                rest = 100 - sum(sliders)
                 max_value = max(0, rest)
-                slider_value = min(st.session_state[f"weight_{asset_names[i]}_slider"], max_value)
+                min_value = 0
+                # Wert aus Session State holen oder 0
+                slider_key = f"weight_{asset_names[i]}_slider"
+                value = st.session_state.get(slider_key, 0)
+                # Wert im erlaubten Bereich halten
+                value = min(max(value, min_value), max_value)
                 sliders.append(
                     cols[i].slider(
                         f"{asset_names[i]}",
-                        min_value=0,
+                        min_value=min_value,
                         max_value=max_value,
-                        value=slider_value,
+                        value=value,
                         step=1,
-                        key=f"weight_{asset_names[i]}_slider"
+                        key=slider_key,
                     )
                 )
+
             # Der letzte Wert: exakt auf 100%!
             last_weight = max(0, 100 - sum(sliders))
             sliders.append(last_weight)
@@ -482,6 +488,7 @@ def main():
                 key=last_key,
                 disabled=True
             )
+
     
             weights = sliders
             total_weight = sum(weights)
