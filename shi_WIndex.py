@@ -203,8 +203,8 @@ def analyze_correlations(returns_dict):
     cbar.ax.tick_params(labelsize=5)
     
     ax.set_title("Korrelationsmatrix der täglichen Renditen", fontsize=6, pad=6)
-    ax.tick_params(axis='x', labelsize=4)      # X-Achse klein
-    ax.tick_params(axis='y', labelsize=4)      # Y-Achse klein
+    ax.tick_params(axis='x', labelsize=5)      # X-Achse klein
+    ax.tick_params(axis='y', labelsize=5)      # Y-Achse klein
     plt.tight_layout()
     st.pyplot(fig)
     return corr_matrix
@@ -223,12 +223,12 @@ def analyze_rolling_performance(returns_dict, window=126):
         return rolling_sharpe
     fig, ax = plt.subplots(figsize=(6, 2.5))
     for name in rolling_sharpe:
-        ax.plot(rolling_sharpe.index, rolling_sharpe[name], label=name, linewidth=0.5)
+        ax.plot(rolling_sharpe.index, rolling_sharpe[name], label=name, linewidth=0.3)
     ax.set_title(f"Rollierender Sharpe Ratio (126-Tage Fenster)", fontsize=8, pad=8)
     ax.axhline(0, color='gray', linestyle='--', linewidth=0.25)
     ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5), frameon=False, fontsize=7)
-    ax.tick_params(axis='x', labelsize=7)
-    ax.tick_params(axis='y', labelsize=7)
+    ax.tick_params(axis='x', labelsize=5)
+    ax.tick_params(axis='y', labelsize=5)
     plt.tight_layout()
     plt.subplots_adjust(right=0.85)
     st.pyplot(fig)
