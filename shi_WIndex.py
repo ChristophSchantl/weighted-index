@@ -277,8 +277,8 @@ def main():
 
     # --- Autoload local CSVs ---
     autoload_files = [
-        ("SHI_ALPHA_28Mai2025.csv", "SHI_ALPHA"),
-        ("SHI_INCOME_28Mai2025.csv", "SHI_INCOME")
+        ("SHI_ALPHA_02JUN2025.csv", "SHI_ALPHA"),
+        ("SHI_INCOME_02JUN2025.csv", "SHI_INCOME")
     ]
     for filename, displayname in autoload_files:
         try:
