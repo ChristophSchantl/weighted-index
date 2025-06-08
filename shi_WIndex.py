@@ -22,22 +22,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---- Beschreibung der Risiko-Kennzahlen ----
-with st.expander("ℹ️ Was bedeuten die Risiko-Kennzahlen?"):
-    st.markdown("""
-    - **Annual Volatility:** Misst die Schwankungsbreite der Renditen pro Jahr. _Niedriger ist besser._
-    - **Sharpe Ratio:** Verhältnis von Überschussrendite zu Risiko. _Höher ist besser._
-    - **Sortino Ratio:** Wie Sharpe, aber nur negatives Risiko. _Höher ist besser._
-    - **Max Drawdown:** Größter prozentualer Wertverlust. _Niedriger ist besser._
-    - **Calmar Ratio:** Rendite im Verhältnis zum maximalen Verlust. _Höher ist besser._
-    - **VaR (95%):** Maximaler Verlust mit 95% Sicherheit. _Weniger negativ ist besser._
-    - **CVaR (95%):** Durchschnittlicher Verlust im schlimmsten Fall. _Weniger negativ ist besser._
-    - **Omega Ratio:** Verhältnis Gewinne zu Verlusten. _Höher ist besser._
-    - **Tail Ratio:** Verhältnis der extrem positiven zu negativen Renditen. _Höher ist besser._
-    - **Win Rate:** Anteil der positiven Perioden. _Höher ist besser._
-    - **Profit Factor:** Gewinn-/Verlustverhältnis. _Höher ist besser._
-    """)
-
 
 
 RISK_FREE_RATE = 0.02  # 2% p.a.
@@ -376,6 +360,32 @@ def main():
             metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
             st.dataframe(metrics_fmt, use_container_width=True, height=350)
 
+
+
+        
+
+        # ---- Beschreibung der Risiko-Kennzahlen ----
+        with st.expander("ℹ️ Was bedeuten die Risiko-Kennzahlen?"):
+            st.markdown("""
+            - **Annual Volatility:** Misst die Schwankungsbreite der Renditen pro Jahr. _Niedriger ist besser._
+            - **Sharpe Ratio:** Verhältnis von Überschussrendite zu Risiko. _Höher ist besser._
+            - **Sortino Ratio:** Wie Sharpe, aber nur negatives Risiko. _Höher ist besser._
+            - **Max Drawdown:** Größter prozentualer Wertverlust. _Niedriger ist besser._
+            - **Calmar Ratio:** Rendite im Verhältnis zum maximalen Verlust. _Höher ist besser._
+            - **VaR (95%):** Maximaler Verlust mit 95% Sicherheit. _Weniger negativ ist besser._
+            - **CVaR (95%):** Durchschnittlicher Verlust im schlimmsten Fall. _Weniger negativ ist besser._
+            - **Omega Ratio:** Verhältnis Gewinne zu Verlusten. _Höher ist besser._
+            - **Tail Ratio:** Verhältnis der extrem positiven zu negativen Renditen. _Höher ist besser._
+            - **Win Rate:** Anteil der positiven Perioden. _Höher ist besser._
+            - **Profit Factor:** Gewinn-/Verlustverhältnis. _Höher ist besser._
+            """)
+
+
+
+
+
+
+    
     # --- Performance-Tab ---
     with tabs[1]:
         st.subheader("Kumulative Performance & Drawdown")
@@ -383,6 +393,7 @@ def main():
             st.warning("Bitte Datenquelle(n) hochladen oder Ticker eingeben.")
         else:
             plot_performance(cumulative_dict)
+            
 
     # --- Drawdown/Korrelation ---
     with tabs[2]:
