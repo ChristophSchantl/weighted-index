@@ -365,21 +365,21 @@ def main():
         
 
             with st.expander("ℹ️ Was bedeuten die Risiko-Kennzahlen?"):
-        st.markdown("""
-    | Kennzahl           | Bedeutung                                                                                 | Bewertung                |
-    |--------------------|------------------------------------------------------------------------------------------|--------------------------|
-    | 📉 **Annual Volatility** | Schwankungsbreite der jährlichen Renditen                                         | Niedriger ist besser     |
-    | 📈 **Sharpe Ratio**      | Verhältnis von Überschussrendite zu Risiko                                         | Höher ist besser         |
-    | 📈 **Sortino Ratio**     | Wie Sharpe, aber nur negatives Risiko                                              | Höher ist besser         |
-    | 🔻 **Max Drawdown**      | Größter prozentualer Wertverlust                                                   | Niedriger ist besser     |
-    | 🏆 **Calmar Ratio**      | Rendite im Verhältnis zum maximalen Verlust                                        | Höher ist besser         |
-    | ⚠️ **VaR (95%)**         | Maximaler Verlust mit 95% Sicherheit                                               | Weniger negativ besser   |
-    | 🚨 **CVaR (95%)**        | Durchschnittlicher Verlust im schlimmsten Fall                                     | Weniger negativ besser   |
-    | ⚖️ **Omega Ratio**       | Verhältnis Gewinne zu Verlusten                                                    | Höher ist besser         |
-    | 📊 **Tail Ratio**        | Verhältnis extremer positiver zu negativer Renditen                                | Höher ist besser         |
-    | ✅ **Win Rate**          | Anteil der positiven Perioden                                                      | Höher ist besser         |
-    | 💰 **Profit Factor**     | Gewinn-/Verlustverhältnis                                                          | Höher ist besser         |
-    """)
+                st.markdown("""
+            | Kennzahl           | Bedeutung                                                                                 | Bewertung                |
+            |--------------------|------------------------------------------------------------------------------------------|--------------------------|
+            | 📉 **Annual Volatility** | Schwankungsbreite der jährlichen Renditen                                         | Niedriger ist besser     |
+            | 📈 **Sharpe Ratio**      | Verhältnis von Überschussrendite zu Risiko                                         | Höher ist besser         |
+            | 📈 **Sortino Ratio**     | Wie Sharpe, aber nur negatives Risiko                                              | Höher ist besser         |
+            | 🔻 **Max Drawdown**      | Größter prozentualer Wertverlust                                                   | Niedriger ist besser     |
+            | 🏆 **Calmar Ratio**      | Rendite im Verhältnis zum maximalen Verlust                                        | Höher ist besser         |
+            | ⚠️ **VaR (95%)**         | Maximaler Verlust mit 95% Sicherheit                                               | Weniger negativ besser   |
+            | 🚨 **CVaR (95%)**        | Durchschnittlicher Verlust im schlimmsten Fall                                     | Weniger negativ besser   |
+            | ⚖️ **Omega Ratio**       | Verhältnis Gewinne zu Verlusten                                                    | Höher ist besser         |
+            | 📊 **Tail Ratio**        | Verhältnis extremer positiver zu negativer Renditen                                | Höher ist besser         |
+            | ✅ **Win Rate**          | Anteil der positiven Perioden                                                      | Höher ist besser         |
+            | 💰 **Profit Factor**     | Gewinn-/Verlustverhältnis                                                          | Höher ist besser         |
+            """)
 
 
 
