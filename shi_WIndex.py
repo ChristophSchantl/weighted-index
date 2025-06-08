@@ -406,7 +406,7 @@ def main():
                 ax.set_xlabel("", fontsize=5)
                 ax.set_xticklabels(
                     [pd.to_datetime(label.get_text()).strftime('%Y-%m') for label in ax.get_xticklabels()],
-                    rotation=45, ha='right', fontsize=4
+                    rotation=90, ha='right', fontsize=4
                 )
                 ax.set_yticklabels(ax.get_yticklabels(), fontsize=4)
 
