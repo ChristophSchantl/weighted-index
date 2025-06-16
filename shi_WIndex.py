@@ -113,14 +113,17 @@ def calculate_metrics(returns_dict, cumulative_dict):
 
 # -- Plots & Analysefunktionen --
 def plot_performance(cumulative_dict):
+    # Plot individual assets first, then Composite Index on top
     fig, ax = plt.subplots(figsize=(6, 3))
+    # First plot all non-composite assets
     for name, cum in cumulative_dict.items():
-        if cum is None or len(cum) == 0:
+        if cum is None or len(cum) == 0 or name == 'Composite Index':
             continue
-        line_kwargs = {'linewidth': 0.3, 'label': name}
-        if name in ["Composite Index", "Eigener Index"]:
-            line_kwargs.update({'color': 'black'})
-        ax.plot(cum.index, cum / cum.iloc[0], **line_kwargs)
+        ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.3)
+    # Then plot Composite Index boldly
+    if 'Composite Index' in cumulative_dict:
+        cum = cumulative_dict['Composite Index']
+        ax.plot(cum.index, cum / cum.iloc[0], label='Composite Index', linewidth=1.0, color='black', zorder=10)
     ax.set_title("Kumulative Performance (Start = 1.0)", fontsize=8, pad=8)
     ax.set_xlabel("Datum", fontsize=5)
     ax.set_ylabel("Indexierte Entwicklung", fontsize=5)
@@ -392,9 +395,9 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Auswahl der Gewichte
-            w_np = opt_w if use_opt else np.array(sliders)/100
-            total = w_np.sum()*100
+                        # Auswahl der Gewichte: immer aus Sliders
+            w_np = np.array(sliders) / 100
+            total = w_np.sum() * 100
             st.markdown(f"**Summe der Gewichte:** {total:.1f}%")
 
             # Composite Index
