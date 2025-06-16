@@ -333,13 +333,19 @@ def main():
                 opt_w = np.ones(n)/n; opt_w_pct = (opt_w*100).round(1)
             opt_map = dict(zip(asset_names, opt_w_pct))
 
-            # Button & Session State
+                        # Button & Session State
             if st.button("Setze optimale Sharpe-Ratio-Gewichte"):
-                for a,p in opt_map.items(): st.session_state[f"w_{a}"] = int(p)
-                st.session_state['use_opt'] = True; st.experimental_rerun()
+                # Setze alle Slider auf optimales Niveau
+                for a, p in opt_map.items():
+                    st.session_state[f"w_{a}"] = int(p)
+                st.session_state['use_opt'] = True
+                # Rerun, falls verfügbar, um Sliders sofort anzuwenden
+                if hasattr(st, 'experimental_rerun'):
+                    st.experimental_rerun()
+
             use_opt = st.session_state.get('use_opt', False)
 
-            # Sliders
+            # Sliders starts here
             sliders=[]; rem=100; cols=st.columns(n)
             for i,a in enumerate(asset_names[:-1]):
                 key=f"w_{a}"; val = st.session_state.get(key, int(100/n))
@@ -347,11 +353,30 @@ def main():
                 sliders.append(cols[i].slider(a, 0, rem, val, key=key)); rem-=sliders[-1]
             sliders.append(rem); cols[-1].number_input(asset_names[-1]+' (auto)',0,100,rem,disabled=True)
 
-            # Anzeige der optimalen Gewichte
-            st.markdown("**🔎 Optimale Gewichte:**")
-            cols_opt=st.columns(min(4,n))
-            for idx,(a,p) in enumerate(opt_map.items()):
-                with cols_opt[idx%4]: st.markdown(f"**{a}**: {p}%")
+                        # Anzeige der optimalen Gewichte (Design)
+            st.markdown("""
+                <div style='margin-bottom:10px;font-size:1.1em;'>
+                  <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
+                  <b>Optimale Gewichtung für maximales Sharpe Ratio:</b>
+                </div>
+            """, unsafe_allow_html=True)
+            cols_cards = st.columns(min(4, n))
+            for i, (asset, pct) in enumerate(opt_map.items()):
+                with cols_cards[i % len(cols_cards)]:
+                    st.markdown(f"""
+                    <div style='
+                        border-radius: 0.6em;
+                        border: 1px solid #b4d5ee;
+                        background: #f8fbfd;
+                        padding: 0.7em 1em;
+                        margin-bottom: 0.5em;
+                        text-align: center;
+                        box-shadow: 0 1px 4px #dbe9f4bb;
+                    '>
+                        <div style='font-size:1em;font-weight:600;'>{asset}</div>
+                        <div style='font-size:1.3em;color:#146eb4;font-weight:700;'>{pct}%</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
             # Auswahl der Gewichte
             w_np = opt_w if use_opt else np.array(sliders)/100
