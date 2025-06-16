@@ -290,7 +290,7 @@ def main():
             analyze_correlations(returns_dict)
         else:
             st.warning("Keine Daten vorhanden.")
-    # Tab 3
+        # Tab 3
     with tabs[3]:
         st.subheader("Monatliche Renditen")
         if returns_dict:
@@ -298,8 +298,22 @@ def main():
                                      for n,r in returns_dict.items()})
             if not monthly.empty:
                 fig, ax = plt.subplots(figsize=(7, max(2.2, len(monthly.columns)*0.33)))
-                sns.heatmap(monthly.T, annot=True, fmt='-.1%', cmap='RdYlGn', center=0,
-                            linewidths=0.5, ax=ax, annot_kws={"size":4})
+                heatmap = sns.heatmap(
+                    monthly.T,
+                    annot=True,
+                    fmt='-.1%',
+                    cmap='RdYlGn',
+                    center=0,
+                    linewidths=0.5,
+                    ax=ax,
+                    annot_kws={"size":4, "color":"black"},
+                    cbar_kws={'label':'', 'shrink':0.8}
+                )
+                # Format x-axis labels as YYYY-MM
+                xticks = [pd.to_datetime(label.get_text()).strftime('%Y-%m') for label in ax.get_xticklabels()]
+                ax.set_xticklabels(xticks, rotation=90, ha='right', fontsize=4)
+                ax.set_yticklabels(ax.get_yticklabels(), fontsize=4)
+                ax.set_title("Monatliche Renditen", fontsize=8, pad=10)
                 plt.tight_layout()
                 st.pyplot(fig)
             else:
