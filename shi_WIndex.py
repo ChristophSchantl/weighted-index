@@ -14,12 +14,15 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 sns.set_theme(style="darkgrid")
 plt.style.use('seaborn-v0_8-darkgrid')
 pd.set_option('display.float_format', '{:.2%}'.format)
+#st.set_page_config(page_title="Strategie-Analyse & Risiko-Kennzahlen", layout="wide")
 
 st.set_page_config(
     page_title="SHI Zertifikate im Vergleich",
     page_icon="📊", 
     layout="wide"
 )
+
+
 
 RISK_FREE_RATE = 0.02  # 2% p.a.
 
@@ -111,19 +114,17 @@ def calculate_metrics(returns_dict, cumulative_dict):
         metrics.loc[name, 'Positive Months'] = positive_months
     return metrics
 
-# -- Plots & Analysefunktionen --
+# -- Plots & Analysefunktionen: ALLE klein, dezent, fein --
 def plot_performance(cumulative_dict):
-    # Plot individual assets first, then Composite Index on top
     fig, ax = plt.subplots(figsize=(6, 3))
-    # First plot all non-composite assets
     for name, cum in cumulative_dict.items():
-        if cum is None or len(cum) == 0 or name == 'Composite Index':
+        if cum is None or len(cum) == 0:
             continue
-        ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.3)
-    # Then plot Composite Index boldly
-    if 'Composite Index' in cumulative_dict:
-        cum = cumulative_dict['Composite Index']
-        ax.plot(cum.index, cum / cum.iloc[0], label='Composite Index', linewidth=0.3, color='black', zorder=10)
+        if name in ["Composite Index", "Eigener Index"]:
+            # Composite Index (oder dein Name) FETT zeichnen
+            ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.3, color="black")
+        else:
+            ax.plot(cum.index, cum / cum.iloc[0], label=name, linewidth=0.3)
     ax.set_title("Kumulative Performance (Start = 1.0)", fontsize=8, pad=8)
     ax.set_xlabel("Datum", fontsize=5)
     ax.set_ylabel("Indexierte Entwicklung", fontsize=5)
@@ -134,24 +135,37 @@ def plot_performance(cumulative_dict):
     plt.subplots_adjust(right=0.85)
     st.pyplot(fig)
 
-    # Drawdown
     fig2, ax2 = plt.subplots(figsize=(6, 3))
+    
+    
+    
     for name, cum in cumulative_dict.items():
         if cum is None or len(cum) == 0:
             continue
         drawdown = (cum / cum.cummax()) - 1
         if isinstance(drawdown, pd.DataFrame):
             drawdown = drawdown.iloc[:, 0]
+        drawdown = pd.Series(drawdown.values, index=drawdown.index)
         drawdown = drawdown.dropna()
-        fill_kwargs = {'alpha': 0.3}
-        line_kwargs = {}
+        if drawdown.empty or len(drawdown) < 2:
+            continue
+        x = np.array(drawdown.index)
+        y = np.array(drawdown.values).flatten()
+        if y.ndim > 1:
+            y = y.flatten()
+        if len(x) != len(y):
+            continue
+
         if name in ["Composite Index", "Eigener Index"]:
-            fill_kwargs.update({'color': 'black', 'alpha': 0.18})
-            line_kwargs.update({'color': 'black', 'linewidth': 0.25, 'label': name})
+            ax2.fill_between(x, y, 0, alpha=0.18, color="black")
+            ax2.plot(x, y, linewidth=0.25, color="black", label=name)
         else:
-            line_kwargs.update({'linewidth': 0.25, 'label': name})
-        ax2.fill_between(drawdown.index, drawdown.values, 0, **fill_kwargs)
-        ax2.plot(drawdown.index, drawdown.values, **line_kwargs)
+            ax2.fill_between(x, y, 0, alpha=0.3)
+            ax2.plot(x, y, linewidth=0.25, label=name)
+
+
+
+    
     ax2.set_title("Drawdown-Verlauf", fontsize=8, pad=8)
     ax2.set_ylabel("Drawdown", fontsize=8)
     ax2.legend(loc='center left', bbox_to_anchor=(1.0, 0.5), frameon=False, fontsize=5)
@@ -165,7 +179,10 @@ def plot_performance(cumulative_dict):
     st.pyplot(fig2)
 
 def analyze_correlations(returns_dict):
-    returns_clean = {name: to_1d_series(ret) for name, ret in returns_dict.items()}
+    returns_clean = {}
+    for name, ret in returns_dict.items():
+        ret = to_1d_series(ret)
+        returns_clean[name] = ret
     returns_df = pd.DataFrame(returns_clean)
     corr_matrix = returns_df.corr()
     if corr_matrix.empty:
@@ -173,13 +190,22 @@ def analyze_correlations(returns_dict):
         return corr_matrix
     fig, ax = plt.subplots(figsize=(6, 3))
     sns.heatmap(
-        corr_matrix, annot=True, cmap='coolwarm', center=0, fmt='.2f', linewidths=0.5,
-        ax=ax, annot_kws={"size": 5, "color": "black"}
+        corr_matrix,
+        annot=True,
+        cmap='coolwarm',
+        center=0,
+        fmt='.2f',
+        linewidths=0.5,
+        ax=ax,
+        annot_kws={"size": 5, "color": "black"}  # kleine Schriftgröße!
     )
-    ax.collections[0].colorbar.ax.tick_params(labelsize=5)
+
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=5)
+    
     ax.set_title("Korrelationsmatrix der täglichen Renditen", fontsize=6, pad=6)
-    ax.tick_params(axis='x', labelsize=5)
-    ax.tick_params(axis='y', labelsize=5)
+    ax.tick_params(axis='x', labelsize=5)      # X-Achse klein
+    ax.tick_params(axis='y', labelsize=5)      # Y-Achse klein
     plt.tight_layout()
     st.pyplot(fig)
     return corr_matrix
@@ -187,11 +213,11 @@ def analyze_correlations(returns_dict):
 def analyze_rolling_performance(returns_dict, window=126):
     rolling_sharpe = pd.DataFrame()
     for name, ret in returns_dict.items():
-        s = to_1d_series(ret)
-        if len(s) < window:
+        ret = to_1d_series(ret)
+        if len(ret) < window:
             continue
-        rolling_mean = s.rolling(window).mean() * 252
-        rolling_std = s.rolling(window).std() * np.sqrt(252)
+        rolling_mean = ret.rolling(window).mean() * 252
+        rolling_std = ret.rolling(window).std() * np.sqrt(252)
         rolling_sharpe[name] = (rolling_mean - RISK_FREE_RATE) / rolling_std
     if rolling_sharpe.empty:
         st.warning("Zu wenig Daten für rollierende Kennzahlen!")
@@ -211,10 +237,14 @@ def analyze_rolling_performance(returns_dict, window=126):
 
 # --------- Streamlit App ---------
 def main():
+    #st.title("📊 SHI Zertifikate im Vergleich – Performance & Risikoanalyse")
+    #st.caption("Strategievergleich mit Benchmarks, Fonds und alternativen Anlagemodellen")
+
     st.markdown('<h3 style="font-weight:400; margin-bottom:0.2rem;">📊 SHI Zertifikate im Vergleich</h3>', unsafe_allow_html=True)
     st.caption("Performance-, Risiko- und Benchmarkanalyse auf Monatsbasis")
 
-    # Sidebar
+
+    
     with st.sidebar:
         st.header("Datenquellen auswählen")
         start = st.date_input("Startdatum", value=datetime(2023, 1, 1))
@@ -222,194 +252,383 @@ def main():
         uploaded_files = st.file_uploader(
             "Zusatzzertifikate/Strategien (CSV, Close-Spalte)", 
             type="csv", accept_multiple_files=True)
+    
+        st.markdown("**Yahoo Finance Ticker (mehrere durch Komma, Zeile, oder Semikolon getrennt):**")
+        # Kein vorinstallierter Wert mehr, stattdessen ein Hinweis-Text
         tickers_input = st.text_area(
-            "Yahoo Finance Ticker (AAPL, MSFT, ...)", placeholder="z.B. AAPL, MSFT, GOOG"
+            "Ticker",
+            value="", 
+            placeholder="z.B. AAPL, MSFT, GOOG"
         )
-        tickers = [t.strip() for line in tickers_input.splitlines() for t in line.replace(";", ",").split(",") if t.strip()]
+    
+        # Parsing wie gehabt
+        tickers = []
+        for line in tickers_input.splitlines():
+            tickers += [
+                t.strip()
+                for t in line.replace(";", ",").split(",")
+                if t.strip()
+            ]
+    
         st.write("Verarbeitete Ticker:", tickers)
 
-    # Daten laden
+
+    # --- Daten laden ---
     returns_dict, cumulative_dict = {}, {}
-    autoload_files = [("SHI_ALPHA_02JUN2025.csv", "SHI_ALPHA"), ("SHI_INCOME_02JUN2025.csv", "SHI_INCOME")]
-    for fname, name in autoload_files:
+
+    # --- Autoload local CSVs ---
+    autoload_files = [
+        ("SHI_ALPHA_02JUN2025.csv", "SHI_ALPHA"),
+        ("SHI_INCOME_02JUN2025.csv", "SHI_INCOME")
+    ]
+    for filename, displayname in autoload_files:
         try:
-            r, c = load_returns_from_csv(fname)
-            returns_dict[name] = r.loc[start:end]
-            cumulative_dict[name] = c.loc[start:end]
+            ret, cum = load_returns_from_csv(filename)
+            ret = ret.loc[(ret.index >= pd.Timestamp(start)) & (ret.index <= pd.Timestamp(end))]
+            cum = cum.loc[(cum.index >= pd.Timestamp(start)) & (cum.index <= pd.Timestamp(end))]
+            returns_dict[displayname] = ret
+            cumulative_dict[displayname] = cum
         except Exception as e:
-            st.warning(f"Fehler beim Laden von {fname}: {e}")
+            st.warning(f"Fehler beim Laden von {filename}: {e}")
+
+    # --- CSV-Uploads ---
     if uploaded_files:
         for file in uploaded_files:
             name = file.name.replace('.csv', '')
             try:
-                r, c = load_returns_from_csv(file)
-                returns_dict[name] = r.loc[start:end]
-                cumulative_dict[name] = c.loc[start:end]
+                ret, cum = load_returns_from_csv(file)
+                ret = ret.loc[(ret.index >= pd.Timestamp(start)) & (ret.index <= pd.Timestamp(end))]
+                cum = cum.loc[(cum.index >= pd.Timestamp(start)) & (cum.index <= pd.Timestamp(end))]
+                returns_dict[name] = ret
+                cumulative_dict[name] = cum
             except Exception as e:
                 st.warning(f"Fehler beim Laden von {file.name}: {e}")
+
+    # Yahoo Finance-Ticker
     for ticker in tickers:
         try:
             info = yf.Ticker(ticker).info
-            disp = info.get("shortName", ticker)
-        except:
-            disp = ticker
+            display_name = info.get("shortName") or info.get("longName") or ticker
+        except Exception:
+            display_name = ticker
         try:
-            r, c = load_returns_from_yahoo(ticker, start, end)
-            returns_dict[disp] = r
-            cumulative_dict[disp] = c
+            ret, cum = load_returns_from_yahoo(ticker, start, end)
+            returns_dict[display_name] = ret
+            cumulative_dict[display_name] = cum
         except Exception as e:
             st.warning(f"Fehler beim Laden von {ticker}: {e}")
-    # Synchronisiere Index
-    if returns_dict:
-        idx = sorted(set.intersection(*[set(r.index) for r in returns_dict.values()]))
-        for k in returns_dict:
-            returns_dict[k] = returns_dict[k].loc[idx]
-            cumulative_dict[k] = cumulative_dict[k].loc[idx]
 
-    # Tabs
-    tabs = st.tabs(["🚦 Metriken","📈 Performance & Drawdown","📉 Sharpe & Korrelation","📊 Monatsrenditen","🔀 Composite Index"])
-    # Tab 0
+    # Synchronisiere Zeitachsen aller Serien
+    if returns_dict:
+        all_indexes = [set(r.index) for r in returns_dict.values() if len(r) > 0]
+        if all_indexes:
+            common_index = sorted(set.intersection(*all_indexes))
+        else:
+            common_index = []
+        for name in returns_dict:
+            returns_dict[name] = returns_dict[name].loc[common_index]
+            cumulative_dict[name] = cumulative_dict[name].loc[common_index]
+
+    # --- Tabs ---
+    tabs = st.tabs([
+    "🚦 Metriken",
+    "📈 Performance & Drawdown",
+    "📉 Sharpe & Korrelation",
+    "📊 Monatsrenditen",
+    "🔀 Composite Index"
+])
+
+    
+    # --- Metrik-Tab ---
     with tabs[0]:
         st.subheader("Erweiterte Risikokennzahlen")
         if not returns_dict:
             st.warning("Bitte Datenquelle(n) hochladen oder Ticker eingeben.")
         else:
             metrics = calculate_metrics(returns_dict, cumulative_dict)
-            # format and display dataframe...
-            st.dataframe(metrics, use_container_width=True, height=350)
-    # Tab 1
+            percent_cols = [
+                'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
+                'CVaR (95%)', 'Win Rate', 'Avg Win', 'Avg Loss', 'Positive Months'
+            ]
+            metrics_fmt = metrics.copy()
+            for col in percent_cols:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = (metrics_fmt[col]*100).round(2).astype(str) + '%'
+            for col in ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Omega Ratio', 'Tail Ratio', 'Profit Factor']:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = metrics_fmt[col].round(2)
+            metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
+            st.dataframe(metrics_fmt, use_container_width=True, height=350)
+
+
+
+        
+
+            with st.expander("ℹ️ Was bedeuten die Risiko-Kennzahlen?"):
+                st.markdown("""
+            | Kennzahl           | Bedeutung                                                                                 | Bewertung                |
+            |--------------------|------------------------------------------------------------------------------------------|--------------------------|
+            | 📉 **Annual Volatility** | Schwankungsbreite der jährlichen Renditen                                         | Niedriger ist besser     |
+            | 📈 **Sharpe Ratio**      | Verhältnis von Überschussrendite zu Risiko                                         | Höher ist besser         |
+            | 📈 **Sortino Ratio**     | Wie Sharpe, aber nur negatives Risiko                                              | Höher ist besser         |
+            | 🔻 **Max Drawdown**      | Größter prozentualer Wertverlust                                                   | Niedriger ist besser     |
+            | 🏆 **Calmar Ratio**      | Rendite im Verhältnis zum maximalen Verlust                                        | Höher ist besser         |
+            | ⚠️ **VaR (95%)**         | Maximaler Verlust mit 95% Sicherheit                                               | Weniger negativ besser   |
+            | 🚨 **CVaR (95%)**        | Durchschnittlicher Verlust im schlimmsten Fall                                     | Weniger negativ besser   |
+            | ⚖️ **Omega Ratio**       | Verhältnis Gewinne zu Verlusten                                                    | Höher ist besser         |
+            | 📊 **Tail Ratio**        | Verhältnis extremer positiver zu negativer Renditen                                | Höher ist besser         |
+            | ✅ **Win Rate**          | Anteil der positiven Perioden                                                      | Höher ist besser         |
+            | 💰 **Profit Factor**     | Gewinn-/Verlustverhältnis                                                          | Höher ist besser         |
+            """)
+
+
+
+
+
+
+
+    
+    # --- Performance-Tab ---
     with tabs[1]:
         st.subheader("Kumulative Performance & Drawdown")
-        if returns_dict:
-            plot_performance(cumulative_dict)
+        if not returns_dict:
+            st.warning("Bitte Datenquelle(n) hochladen oder Ticker eingeben.")
         else:
-            st.warning("Keine Daten vorhanden.")
-    # Tab 2
+            plot_performance(cumulative_dict)
+            
+
+    # --- Drawdown/Korrelation ---
     with tabs[2]:
         st.subheader("Rolling Sharpe Ratio")
-        if returns_dict:
-            analyze_rolling_performance(returns_dict)
-            st.subheader("Korrelation der Tagesrenditen")
-            analyze_correlations(returns_dict)
+        if not returns_dict:
+            st.warning("Bitte Datenquelle(n) hochladen oder Ticker eingeben.")
         else:
-            st.warning("Keine Daten vorhanden.")
-        # Tab 3
+            analyze_rolling_performance(returns_dict, window=126)
+        st.subheader("Korrelation der Tagesrenditen")
+        if returns_dict:
+            analyze_correlations(returns_dict)
+
+    # --- Monatsrenditen Heatmap ---
+    
     with tabs[3]:
         st.subheader("Monatliche Renditen")
         if returns_dict:
-            monthly = pd.DataFrame({n: to_1d_series(r).resample('M').apply(lambda x: (1+x).prod()-1)
-                                     for n,r in returns_dict.items()})
-            if not monthly.empty:
-                fig, ax = plt.subplots(figsize=(7, max(2.2, len(monthly.columns)*0.33)))
+            monthly_returns = pd.DataFrame({
+                name: to_1d_series(ret).resample('M').apply(lambda x: (1 + x).prod() - 1)
+                for name, ret in returns_dict.items()
+            })
+            if not monthly_returns.empty:
+                fig, ax = plt.subplots(figsize=(7, max(2.2, len(monthly_returns.columns)*0.33)))
+
                 heatmap = sns.heatmap(
-                    monthly.T,
+                    monthly_returns.T,
                     annot=True,
                     fmt='-.1%',
                     cmap='RdYlGn',
                     center=0,
                     linewidths=0.5,
                     ax=ax,
-                    annot_kws={"size":4, "color":"black"},
-                    cbar_kws={'label':'', 'shrink':0.8}
+                    annot_kws={"size": 4, "color": "black", "fontname": "DejaVu Sans"},
+                    cbar_kws={'label': '', 'shrink': 0.8}
                 )
-                # Format x-axis labels as YYYY-MM
-                xticks = [pd.to_datetime(label.get_text()).strftime('%Y-%m') for label in ax.get_xticklabels()]
-                ax.set_xticklabels(xticks, rotation=90, ha='right', fontsize=4)
-                ax.set_yticklabels(ax.get_yticklabels(), fontsize=4)
+
                 ax.set_title("Monatliche Renditen", fontsize=8, pad=10)
+                ax.set_xlabel("", fontsize=5)
+                ax.set_xticklabels(
+                    [pd.to_datetime(label.get_text()).strftime('%Y-%m') for label in ax.get_xticklabels()],
+                    rotation=90, ha='right', fontsize=4
+                )
+                ax.set_yticklabels(ax.get_yticklabels(), fontsize=4)
+
+                # Colorbar kleiner
+                cbar = heatmap.collections[0].colorbar
+                cbar.ax.tick_params(labelsize=5)
+
                 plt.tight_layout()
                 st.pyplot(fig)
             else:
-                st.warning("Keine Monatsrenditen vorhanden.")
+                st.warning("Keine Monatsrenditen für diesen Zeitraum vorhanden.")
         else:
             st.warning("Keine Daten vorhanden.")
-    # Tab 4: Composite Index
+
+
+   # --- Composite Index  ---
+    
+
     with tabs[4]:
         st.subheader("🔀 Composite Index aus gewählten Assets")
         asset_names = list(returns_dict.keys())
-        n = len(asset_names)
-        if n < 2:
-            st.info("Bitte mindestens zwei Assets laden.")
+        num_assets = len(asset_names)
+    
+        if num_assets < 2:
+            st.info("Bitte mindestens zwei Assets laden, um einen eigenen Index zu bauen.")
         else:
-            st.markdown("**Gewichte einstellen (Summe=100%):**")
-            returns_df = pd.DataFrame({k: to_1d_series(v) for k,v in returns_dict.items()}).dropna(how='any')
-
-            # Optimierung
-            def neg_sharpe(w):
-                r = returns_df.mean(); C = returns_df.cov()
-                port_ret = (r*w).sum()*252
-                port_vol = np.sqrt(w.T @ (C*252) @ w)
-                return -((port_ret - RISK_FREE_RATE)/port_vol) if port_vol>0 else np.inf
-            cons = {'type':'eq','fun':lambda w: w.sum()-1}
-            bounds = [(0,1)]*n; x0 = np.ones(n)/n
-            res = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
-            if res.success:
-                opt_w = res.x; opt_w_pct = (opt_w*100).round(1)
+            st.markdown("**Gewichte für jedes Asset einstellen (Summe = 100%):**")
+            returns_df = pd.DataFrame({k: to_1d_series(v) for k, v in returns_dict.items()}).dropna()
+    
+            # --- 1. Optimale Sharpe-Ratio-Gewichte berechnen ---
+            def neg_sharpe(weights):
+                port_ret = np.sum(returns_df.mean() * weights) * 252
+                port_vol = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * 252, weights)))
+                sharpe = (port_ret - RISK_FREE_RATE) / port_vol if port_vol > 0 else -np.inf
+                return -sharpe
+    
+            cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+            bounds = tuple((0, 1) for _ in range(num_assets))
+            x0 = np.ones(num_assets) / num_assets
+            opt_result = opt.minimize(neg_sharpe, x0, method='SLSQP', bounds=bounds, constraints=cons)
+            if opt_result.success:
+                opt_weights = opt_result.x
+                opt_weights_percent = (opt_weights * 100).round().astype(int)
             else:
-                st.error("⚠️ Optimierung fehlgeschlagen, Gleichgewichtung genutzt.")
-                opt_w = np.ones(n)/n; opt_w_pct = (opt_w*100).round(1)
-            opt_map = dict(zip(asset_names, opt_w_pct))
-
-                        # Button & Session State
-            if st.button("Setze optimale Sharpe-Ratio-Gewichte"):
-                # Setze alle Slider auf optimales Niveau
-                for a, p in opt_map.items():
-                    st.session_state[f"w_{a}"] = int(p)
-                st.session_state['use_opt'] = True
-                # Rerun, falls verfügbar, um Sliders sofort anzuwenden
-                if hasattr(st, 'experimental_rerun'):
-                    st.experimental_rerun()
-
-            use_opt = st.session_state.get('use_opt', False)
-
-            # Sliders starts here
-            sliders=[]; rem=100; cols=st.columns(n)
-            for i,a in enumerate(asset_names[:-1]):
-                key=f"w_{a}"; val = st.session_state.get(key, int(100/n))
-                val = min(val, rem); st.session_state[key]=val
-                sliders.append(cols[i].slider(a, 0, rem, val, key=key)); rem-=sliders[-1]
-            sliders.append(rem); cols[-1].number_input(asset_names[-1]+' (auto)',0,100,rem,disabled=True)
-
-                        # Anzeige der optimalen Gewichte (Design)
+                opt_weights_percent = np.array([int(round(100 / num_assets))] * num_assets)
+    
+            # --- 2. Slider-Logik: Initialisierung & Rendering ---
+            # Button für optimale Gewichte
+            set_opt_weights = st.session_state.get("set_opt_weights", False)
+            btn = st.button("Setze optimale Sharpe-Ratio-Gewichte", key="set_opt_btn")
+            if btn:
+                set_opt_weights = True
+                # Alle Slider auf optimale Werte setzen
+                for i in range(num_assets - 1):
+                    st.session_state[f"weight_{asset_names[i]}_slider"] = int(opt_weights_percent[i])
+                st.session_state["set_opt_weights"] = False  # Flag zurücksetzen nach setzen
+                st.rerun()
+    
+            sliders = []
+            cols = st.columns(num_assets)
+            rest = 100
+            for i in range(num_assets - 1):
+                slider_key = f"weight_{asset_names[i]}_slider"
+                max_value = max(0, rest)
+                min_value = 0
+    
+                # Wert aus Session State oder von optimalen Gewichten
+                if slider_key not in st.session_state:
+                    value = int(opt_weights_percent[i])
+                else:
+                    value = st.session_state[slider_key]
+    
+                # Immer im gültigen Bereich halten!
+                if value > max_value:
+                    value = max_value
+                if value < min_value:
+                    value = min_value
+    
+                st.session_state[slider_key] = value  # Explizit synchronisieren
+    
+                sliders.append(
+                    cols[i].slider(
+                        f"{asset_names[i]}",
+                        min_value=min_value,
+                        max_value=max_value,
+                        value=value,
+                        step=1,
+                        key=slider_key,
+                    )
+                )
+                rest -= value
+    
+            # Der letzte Wert: exakt auf 100%!
+            last_weight = max(0, 100 - sum(sliders))
+            sliders.append(last_weight)
+            last_key = f"weight_{asset_names[-1]}_auto"
+            # NICHT im Session State setzen, damit kein Warning kommt!
+            cols[-1].number_input(
+                f"{asset_names[-1]} (auto)",
+                min_value=0,
+                max_value=100,
+                value=last_weight,
+                step=1,
+                key=last_key,
+                disabled=True
+            )
+    
+            weights = sliders
+            total_weight = sum(weights)
+    
+            # --- 4. Summe der Gewichte anzeigen ---
+            st.markdown(
+                f"<div style='margin-top:10px;margin-bottom:4px;font-size:1.15em;'><b>Summe der Gewichte: "
+                f"<span style='color:{'#3cb371' if total_weight == 100 else '#e74c3c'};'>{total_weight:.0f}%</span></b></div>",
+                unsafe_allow_html=True
+            )
+    
+            # --- 5. Anzeige der optimalen Gewichte ---
             st.markdown("""
                 <div style='margin-bottom:10px;font-size:1.1em;'>
-                  <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
-                  <b>Optimale Gewichtung für maximales Sharpe Ratio:</b>
+                <span style='font-size:1.3em;margin-right:8px;'>🔎</span>
+                <b>Optimale Gewichtung für maximales Sharpe Ratio (automatisch berechnet):</b>
                 </div>
-            """, unsafe_allow_html=True)
-            cols_cards = st.columns(min(4, n))
-            for i, (asset, pct) in enumerate(opt_map.items()):
-                with cols_cards[i % len(cols_cards)]:
-                    st.markdown(f"""
-                    <div style='
-                        border-radius: 0.6em;
-                        border: 1px solid #b4d5ee;
-                        background: #f8fbfd;
-                        padding: 0.7em 1em;
-                        margin-bottom: 0.5em;
-                        text-align: center;
-                        box-shadow: 0 1px 4px #dbe9f4bb;
-                    '>
-                        <div style='font-size:1em;font-weight:600;'>{asset}</div>
-                        <div style='font-size:1.3em;color:#146eb4;font-weight:700;'>{pct}%</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            col_count = min(4, len(asset_names))
+            cols2 = st.columns(col_count)
+            for i, (asset, w) in enumerate(zip(asset_names, opt_weights_percent)):
+                with cols2[i % col_count]:
+                    st.markdown(
+                        f"""
+                        <div style='
+                            border-radius: 0.6em;
+                            border: 1px solid #b4d5ee;
+                            background: #f8fbfd;
+                            padding: 0.7em 1em 0.6em 1em;
+                            margin-bottom: 0.5em;
+                            text-align: center;
+                            min-width: 110px;
+                            box-shadow: 0 1px 4px #dbe9f4bb;
+                        '>
+                            <span style='font-size:1.11em;font-weight:600;'>{asset}</span><br>
+                            <span style='font-size:1.3em;color:#146eb4;font-weight:700;'>{w}%</span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+    
+            # --- Performance usw. ---
+            weights_np = np.array(weights) / 100
+            custom_index_returns = (returns_df * weights_np).sum(axis=1)
+            custom_index_cum = (1 + custom_index_returns).cumprod()
+            compare_cum = cumulative_dict.copy()
+            compare_cum["Composite Index"] = custom_index_cum
+            compare_ret = returns_dict.copy()
+            compare_ret["Composite Index"] = custom_index_returns
+    
+            st.markdown("**Kumulative Performance (Composite Index vs. Einzelassets):**")
+            plot_performance(compare_cum)
+            st.markdown("**Risikokennzahlen (Composite Index vs. Einzelassets):**")
+            metrics = calculate_metrics(compare_ret, compare_cum)
+            percent_cols = [
+                'Total Return', 'Annual Return', 'Annual Volatility', 'Max Drawdown', 'VaR (95%)',
+                'CVaR (95%)', 'Win Rate', 'Avg Win', 'Avg Loss', 'Positive Months'
+            ]
+            metrics_fmt = metrics.copy()
+            for col in percent_cols:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = (metrics_fmt[col]*100).round(2).astype(str) + '%'
+            for col in ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Omega Ratio', 'Tail Ratio', 'Profit Factor']:
+                if col in metrics_fmt.columns:
+                    metrics_fmt[col] = metrics_fmt[col].round(2)
+            metrics_fmt.index = metrics_fmt.index.to_series().apply(lambda x: f"{x}")
+            st.dataframe(metrics_fmt, use_container_width=True, height=350)
 
-                        # Auswahl der Gewichte: immer aus Sliders
-            w_np = np.array(sliders) / 100
-            total = w_np.sum() * 100
-            st.markdown(f"**Summe der Gewichte:** {total:.1f}%")
 
-            # Composite Index
-            comp_ret = (returns_df * w_np).sum(axis=1)
-            comp_cum = (1+comp_ret).cumprod()
-            compare_cum = cumulative_dict.copy(); compare_cum['Composite Index']=comp_cum
-            compare_ret = returns_dict.copy(); compare_ret['Composite Index']=comp_ret
+            with st.expander("ℹ️ Was bedeuten die Risiko-Kennzahlen?"):
+                st.markdown("""
+            | Kennzahl           | Bedeutung                                                                                 | Bewertung                |
+            |--------------------|------------------------------------------------------------------------------------------|--------------------------|
+            | 📉 **Annual Volatility** | Schwankungsbreite der jährlichen Renditen                                         | Niedriger ist besser     |
+            | 📈 **Sharpe Ratio**      | Verhältnis von Überschussrendite zu Risiko                                         | Höher ist besser         |
+            | 📈 **Sortino Ratio**     | Wie Sharpe, aber nur negatives Risiko                                              | Höher ist besser         |
+            | 🔻 **Max Drawdown**      | Größter prozentualer Wertverlust                                                   | Niedriger ist besser     |
+            | 🏆 **Calmar Ratio**      | Rendite im Verhältnis zum maximalen Verlust                                        | Höher ist besser         |
+            | ⚠️ **VaR (95%)**         | Maximaler Verlust mit 95% Sicherheit                                               | Weniger negativ besser   |
+            | 🚨 **CVaR (95%)**        | Durchschnittlicher Verlust im schlimmsten Fall                                     | Weniger negativ besser   |
+            | ⚖️ **Omega Ratio**       | Verhältnis Gewinne zu Verlusten                                                    | Höher ist besser         |
+            | 📊 **Tail Ratio**        | Verhältnis extremer positiver zu negativer Renditen                                | Höher ist besser         |
+            | ✅ **Win Rate**          | Anteil der positiven Perioden                                                      | Höher ist besser         |
+            | 💰 **Profit Factor**     | Gewinn-/Verlustverhältnis                                                          | Höher ist besser         |
+            """)
 
-            st.markdown("**Kumulative Performance:**"); plot_performance(compare_cum)
-            st.markdown("**Risikokennzahlen:**")
-            df_m = calculate_metrics(compare_ret, compare_cum)
-            st.dataframe(df_m, use_container_width=True, height=350)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
