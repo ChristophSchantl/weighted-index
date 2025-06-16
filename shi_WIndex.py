@@ -10,7 +10,8 @@ import scipy.optimize as opt
 from datetime import datetime, timedelta
 
 # ---- Styling & Optionen ----
-warnings.simplefilter(action='ignore', category=FutureWarning)\sns.set_theme(style="darkgrid")
+warnings.simplefilter(action='ignore', category=FutureWarning)
+sns.set_theme(style="darkgrid")
 plt.style.use('seaborn-v0_8-darkgrid')
 pd.set_option('display.float_format', '{:.2%}'.format)
 
