@@ -382,15 +382,34 @@ def main():
                     metrics_fmt_display[col] = metrics_fmt_display[col].round(2)
             st.dataframe(metrics_fmt_display, use_container_width=True, height=360)
 
-            with st.expander("ℹ️ Definitionen"):
-                st.markdown("""
-                - **Annual Return**: geometrisch annualisiert: \\( (\\prod (1+r_t))^{252/N} - 1 \\)  
-                - **Annual Volatility**: \\(\\sigma \\cdot \\sqrt{252}\\) (ddof=1)  
-                - **Sharpe**: \\( (R_{ann}-r_f)/\\sigma_{ann} \\) mit \\(r_f=2\\%\\) p.a.  
-                - **Sortino**: nur Downside-Std (Schwelle = täglicher \\(r_f\\))  
-                - **Max Drawdown**: Minimum von \\(\\frac{Cum}{Cum^{max}}-1\\)  
-                - **VaR/CVaR (95%)**: 5%-Quantil der Tagesrenditen bzw. dessen Durchschnitt  
-                """)
+        with st.expander("ℹ️ Definitionen"):
+            st.markdown(r"""
+        **• Annual Return:** geometrisch annualisiert  
+        \[
+        R_{ann} = \Big(\prod_{t=1}^{N}(1+r_t)\Big)^{\frac{252}{N}} - 1
+        \]
+        
+        **• Annual Volatility:**  
+        \[
+        \sigma_{ann} = \sigma \cdot \sqrt{252}
+        \]
+        
+        **• Sharpe Ratio:**  
+        \[
+        \text{Sharpe} = \frac{R_{ann} - r_f}{\sigma_{ann}}, \quad r_f = 2\% \text{ p.a.}
+        \]
+        
+        **• Sortino Ratio:** nur Downside-Std mit Schwelle = täglicher \(r_f\)
+        
+        **• Max Drawdown:**  
+        \[
+        \min \Big( \frac{Cum}{Cum^{max}} - 1 \Big)
+        \]
+        
+        **• VaR / CVaR (95%):**  
+        5 %-Quantil der Tagesrenditen bzw. dessen Durchschnitt
+        """, unsafe_allow_html=False)
+
 
     # --- Performance & Drawdown ---
     with tabs[1]:
