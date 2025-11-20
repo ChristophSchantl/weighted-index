@@ -385,30 +385,24 @@ def main():
         with st.expander("ℹ️ Definitionen"):
             st.markdown(r"""
         **• Annual Return:** geometrisch annualisiert  
-        \[
-        R_{ann} = \Big(\prod_{t=1}^{N}(1+r_t)\Big)^{\frac{252}{N}} - 1
-        \]
+        $R_{ann} = \left(\prod_{t=1}^{N}(1+r_t)\right)^{\frac{252}{N}} - 1$
         
         **• Annual Volatility:**  
-        \[
-        \sigma_{ann} = \sigma \cdot \sqrt{252}
-        \]
+        $\sigma_{ann} = \sigma \cdot \sqrt{252}$
         
         **• Sharpe Ratio:**  
-        \[
-        \text{Sharpe} = \frac{R_{ann} - r_f}{\sigma_{ann}}, \quad r_f = 2\% \text{ p.a.}
-        \]
+        $\text{Sharpe} = \frac{R_{ann} - r_f}{\sigma_{ann}}, \quad r_f = 2\% \text{ p.a.}$
         
-        **• Sortino Ratio:** nur Downside-Std mit Schwelle = täglicher \(r_f\)
+        **• Sortino Ratio:**  
+        nur Downside-Std (Schwelle = täglicher $r_f$)
         
         **• Max Drawdown:**  
-        \[
-        \min \Big( \frac{Cum}{Cum^{max}} - 1 \Big)
-        \]
+        $\min\left(\frac{Cum}{Cum^{max}} - 1\right)$
         
         **• VaR / CVaR (95%):**  
         5 %-Quantil der Tagesrenditen bzw. dessen Durchschnitt
-        """, unsafe_allow_html=False)
+        """)
+
 
 
     # --- Performance & Drawdown ---
